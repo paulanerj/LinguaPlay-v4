@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinguaPlay - Subtitle Learning Engine</title>
+    <link rel="stylesheet" href="/css/app.css">
+  </head>
+  <body>
+    <div id="app-container">
+      <div id="main-content">
+        <div id="video-surface">
+          <video controls>
+            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+          </video>
+          <div id="subtitle-display" class="hidden"></div>
+        </div>
+        
+        <div id="controls-bar">
+          <div class="text-sm opacity-50">LinguaPlay Core v0.4.0</div>
+          <div id="status-lexicon" class="text-xs text-accent">Lexicon: Loading...</div>
+        </div>
+
+        <div id="transcript-panel"></div>
+      </div>
+
+      <div id="focus-panel">
+        <div class="flex h-full items-center justify-center opacity-30 text-center">
+          Select a token to view details and examples.
+        </div>
+      </div>
+    </div>
+
+    <div id="quick-preview-tooltip" class="hidden"></div>
+
+    <script type="module" src="/js/app.ts"></script>
+  </body>
+</html>
+

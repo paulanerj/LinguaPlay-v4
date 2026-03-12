@@ -1,0 +1,12 @@
+{
+  "你好": ["nǐ hǎo", "Hello", "phrase"],
+  "欢迎": ["huān yíng", "Welcome", "verb"],
+  "来到": ["lái dào", "To arrive at; to come to", "verb"],
+  "我们": ["wǒ men", "We; us", "pronoun"],
+  "一起": ["yì qǐ", "Together", "adverb"],
+  "学习": ["xué xí", "To study; to learn", "verb"],
+  "中文": ["zhōng wén", "Chinese language", "noun"],
+  "中国": ["zhōng guó", "China", "noun"],
+  "朋友": ["péng you", "Friend", "noun"],
+  "快乐": ["kuài lè", "Happy", "adj"]
+}
