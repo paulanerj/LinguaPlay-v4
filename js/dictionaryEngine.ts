@@ -32,32 +32,46 @@ class DictionaryEngine {
    * CONTRACT: Never overwrites curated entries.
    */
   async loadLargeLexicon(url: string) {
+    // TASK 1: Ensure curated entries populate dictionary BEFORE any external load
+    this.curatedEntries.forEach((val, key) => {
+      this.dictionary.set(key, val);
+    });
+
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error("Lexicon load failed");
       
       const data = await response.json();
       
-      // Merge logic
-      for (const [word, info] of Object.entries(data)) {
-        if (!this.curatedEntries.has(word)) {
-          const [pinyin, meaning, pos] = info as [string, string, string];
-          this.dictionary.set(word, { pinyin, meaning, pos });
+      let accepted = 0;
+      let rejected = 0;
+
+      // TASK 2: Strict validation of lexicon JSON structure
+      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+        for (const [word, info] of Object.entries(data)) {
+          if (Array.isArray(info) && info.length >= 2 && typeof info[0] === 'string' && typeof info[1] === 'string') {
+            if (!this.curatedEntries.has(word)) {
+              const [pinyin, meaning, pos] = info as [string, string, string | undefined];
+              this.dictionary.set(word, { pinyin, meaning, pos });
+              accepted++;
+            }
+          } else {
+            rejected++;
+          }
         }
+      } else {
+        throw new Error("Invalid lexicon format: Root is not an object.");
       }
 
-      // Merge curated back in
-      this.curatedEntries.forEach((val, key) => {
-        this.dictionary.set(key, val);
-      });
-
+      console.log(`Lexicon Loaded: ${accepted} accepted, ${rejected} rejected. Total: ${this.dictionary.size}`);
       this.rebuildTrie();
       stateManager.setState({ lexiconLoaded: true });
-      console.log(`Lexicon Loaded: ${this.dictionary.size} entries.`);
     } catch (e) {
       console.error("Lexicon Error:", e);
+      console.log("Fallback Mode: Using curated entries only.");
       // Fallback to curated only
       this.rebuildTrie();
+      stateManager.setState({ lexiconLoaded: true }); // Reflect fallback success
     }
   }
 

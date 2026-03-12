@@ -48,7 +48,11 @@ class StateManager {
   }
 
   getState(): AppState {
-    return { ...this.state };
+    return {
+      ...this.state,
+      subtitles: [...this.state.subtitles],
+      savedWords: new Set(this.state.savedWords)
+    };
   }
 
   subscribe(callback: (state: AppState) => void) {

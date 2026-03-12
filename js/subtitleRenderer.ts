@@ -8,9 +8,11 @@
 
 import { tokenTrie } from './tokenTrie.ts';
 import { Subtitle } from './state.ts';
+import { segmentationPostProcessor } from './segmentationPostProcessor.ts';
 
 export function renderSubtitleRow(subtitle: Subtitle, savedWords: Set<string>, extraClass: string = ''): string {
-  const tokens = tokenTrie.segment(subtitle.text);
+  const rawTokens = tokenTrie.segment(subtitle.text);
+  const tokens = segmentationPostProcessor.process(rawTokens);
   
   return `
     <div class="subtitle-row ${extraClass}" data-id="${subtitle.id}" data-start="${subtitle.start}">

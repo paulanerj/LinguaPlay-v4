@@ -18,7 +18,7 @@ export function initUI() {
   let transcriptRendered = false;
   let lastActiveId: number | null = null;
   let lastSelectedToken: string | null = null;
-  let lastSavedWordsSize = -1;
+  let lastSavedWordsRef: Set<string> | null = null;
 
   // Video Time Update
   video.addEventListener('timeupdate', () => {
@@ -72,9 +72,9 @@ export function initUI() {
     }
 
     // 3. Handle Focus Panel & Example Sandbox
-    if (state.selectedToken !== lastSelectedToken || state.savedWords.size !== lastSavedWordsSize) {
+    if (state.selectedToken !== lastSelectedToken || state.savedWords !== lastSavedWordsRef) {
       lastSelectedToken = state.selectedToken;
-      lastSavedWordsSize = state.savedWords.size;
+      lastSavedWordsRef = state.savedWords;
 
       if (state.selectedToken) {
         const entry = dictionaryEngine.getEntry(state.selectedToken);
@@ -132,7 +132,7 @@ export function initUI() {
     if (row && (row.classList.contains('transcript-row') || row.classList.contains('example-row'))) {
       const start = parseFloat(row.getAttribute('data-start') || '0');
       video.currentTime = start;
-      video.play();
+      // Removed video.play() to respect current playback state
       return;
     }
 
@@ -157,31 +157,63 @@ export function initUI() {
     }
   });
 
+  // Tooltip Logic
+  let tooltipTimeout: ReturnType<typeof setTimeout>;
+
+  const showTooltip = (target: HTMLElement) => {
+    const token = target.getAttribute('data-token')!;
+    const entry = dictionaryEngine.getEntry(token);
+    
+    if (entry) {
+      tooltip.innerHTML = `<div class="font-bold">${entry.pinyin}</div><div class="text-xs opacity-80">${entry.meaning}</div>`;
+      const rect = target.getBoundingClientRect();
+      tooltip.style.left = `${rect.left}px`;
+      tooltip.style.top = `${rect.top}px`;
+      tooltip.classList.remove('hidden');
+    }
+  };
+
+  const hideTooltip = () => {
+    clearTimeout(tooltipTimeout);
+    tooltip.classList.add('hidden');
+  };
+
   // Quick Preview Tooltip (Hover Delegation)
-  let tooltipTimeout: number;
   document.body.addEventListener('mouseover', (e) => {
     const target = e.target as HTMLElement;
     if (target.classList.contains('token')) {
       clearTimeout(tooltipTimeout);
-      const token = target.getAttribute('data-token')!;
-      const entry = dictionaryEngine.getEntry(token);
-      
-      if (entry) {
-        tooltip.innerHTML = `<div class="font-bold">${entry.pinyin}</div><div class="text-xs opacity-80">${entry.meaning}</div>`;
-        const rect = target.getBoundingClientRect();
-        tooltip.style.left = `${rect.left}px`;
-        tooltip.style.top = `${rect.top}px`;
-        tooltip.classList.remove('hidden');
-      }
+      showTooltip(target);
     }
   });
 
   document.body.addEventListener('mouseout', (e) => {
     const target = e.target as HTMLElement;
     if (target.classList.contains('token')) {
-      tooltipTimeout = setTimeout(() => {
-        tooltip.classList.add('hidden');
-      }, 100);
+      tooltipTimeout = setTimeout(hideTooltip, 100);
     }
   });
+
+  // Mobile Token Preview Fallback (Long-press / Tap-hold)
+  let touchTimeout: ReturnType<typeof setTimeout>;
+  
+  document.body.addEventListener('touchstart', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('token')) {
+      clearTimeout(touchTimeout);
+      touchTimeout = setTimeout(() => {
+        showTooltip(target);
+      }, 400); // 400ms long-press
+    }
+  }, { passive: true });
+
+  document.body.addEventListener('touchend', () => {
+    clearTimeout(touchTimeout);
+    tooltipTimeout = setTimeout(hideTooltip, 1500); // Hide after a delay on mobile
+  });
+
+  document.body.addEventListener('touchmove', () => {
+    clearTimeout(touchTimeout);
+    hideTooltip();
+  }, { passive: true });
 }
