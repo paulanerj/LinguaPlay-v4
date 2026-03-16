@@ -7,6 +7,7 @@ import { stateManager } from './state.ts';
 import { dictionaryEngine } from './dictionaryEngine.ts';
 import { renderSubtitleRow } from './subtitleRenderer.ts';
 import { syncSubtitles } from './subtitleSync.ts';
+import { getHeatLabel } from './frequencyHeatmap.ts';
 
 export function initUI() {
   const video = document.querySelector('video') as HTMLVideoElement;
@@ -73,12 +74,21 @@ export function initUI() {
 
     // 3. Handle Focus Panel & Example Sandbox
     if (state.selectedToken !== lastSelectedToken || state.savedWords !== lastSavedWordsRef) {
+      // Visual feedback for selected token
+      if (state.selectedToken !== lastSelectedToken) {
+        document.querySelectorAll('.token.active').forEach(el => el.classList.remove('active'));
+        if (state.selectedToken) {
+          document.querySelectorAll(`.token[data-token="${state.selectedToken}"]`).forEach(el => el.classList.add('active'));
+        }
+      }
+
       lastSelectedToken = state.selectedToken;
       lastSavedWordsRef = state.savedWords;
 
       if (state.selectedToken) {
         const entry = dictionaryEngine.getEntry(state.selectedToken);
         const isSaved = state.savedWords.has(state.selectedToken);
+        const heatLabel = getHeatLabel(state.selectedToken, state.savedWords);
         
         // Find examples (limit to 5 for performance)
         const examples = state.subtitles.filter(s => s.text.includes(state.selectedToken!)).slice(0, 5);
@@ -95,10 +105,32 @@ export function initUI() {
             <p class="text-xl italic opacity-80">${entry?.pinyin || 'pinyin'}</p>
             <p class="text-lg mt-2">${entry?.meaning || 'Meaning not found in current lexicon.'}</p>
           </div>
-          <div class="grid grid-cols-2 gap-2 opacity-50 text-sm mb-8">
-            <div class="bg-slate-800 p-2 rounded">Freq Rank: --</div>
-            <div class="bg-slate-800 p-2 rounded">HSK Level: --</div>
+          
+          <div class="grid grid-cols-2 gap-2 text-sm mb-4">
+            <div class="bg-slate-800 p-2 rounded border border-slate-700">
+              <span class="opacity-50">Difficulty:</span> 
+              <span class="font-semibold text-accent-primary">${heatLabel}</span>
+            </div>
+            <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
+              <span>Freq Rank:</span> --
+            </div>
+            <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
+              <span>HSK Level:</span> --
+            </div>
           </div>
+
+          <!-- Heatmap Legend -->
+          <div class="mb-8 p-3 bg-slate-900/50 rounded-lg border border-slate-800">
+            <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Difficulty Guide</h4>
+            <div class="flex flex-wrap gap-2 text-[10px]">
+              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-400"></span> Known</div>
+              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Common</div>
+              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Mid</div>
+              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-500"></span> Rare</div>
+              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Unknown</div>
+            </div>
+          </div>
+
           <div>
             <h3 class="text-lg font-semibold mb-3 border-b border-slate-700 pb-1">Example Sandbox</h3>
             <div class="flex flex-col gap-2">
@@ -108,8 +140,18 @@ export function initUI() {
         `;
       } else {
         focusPanel.innerHTML = `
-          <div class="flex h-full items-center justify-center opacity-30 text-center">
-            Select a token to view details and examples.
+          <div class="flex h-full flex-col items-center justify-center opacity-30 text-center gap-4">
+            <p>Select a token to view details and examples.</p>
+            <div class="w-full max-w-[200px] p-3 bg-slate-900/50 rounded-lg border border-slate-800 text-left">
+              <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Difficulty Guide</h4>
+              <div class="flex flex-col gap-1 text-[10px]">
+                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-400"></span> Known (Saved)</div>
+                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Common (Basic)</div>
+                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Medium (Short)</div>
+                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange-500"></span> Rare (Long)</div>
+                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"></span> Unknown</div>
+              </div>
+            </div>
           </div>
         `;
       }

@@ -161,6 +161,24 @@ video {
   color: var(--accent-primary);
 }
 
+/* Heatmap Engine Styles */
+.token.heat-known { color: #4ade80; } /* green-400 */
+.token.heat-common { color: #60a5fa; } /* blue-400 */
+.token.heat-mid { color: #facc15; } /* yellow-400 */
+.token.heat-rare { color: #f97316; } /* orange-500 */
+.token.heat-unknown { color: #ef4444; } /* red-500 */
+
+/* Maintain visibility on hover/active */
+.token:hover {
+  background: var(--token-hover);
+  color: white !important;
+}
+
+.token.active {
+  background: var(--token-active);
+  color: white !important;
+}
+
 /* Quick Preview Tooltip */
 #quick-preview-tooltip {
   position: fixed;

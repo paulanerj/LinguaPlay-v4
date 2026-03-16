@@ -9,6 +9,7 @@
 import { tokenTrie } from './tokenTrie.ts';
 import { Subtitle } from './state.ts';
 import { segmentationPostProcessor } from './segmentationPostProcessor.ts';
+import { getHeatClass } from './frequencyHeatmap.ts';
 
 export function renderSubtitleRow(subtitle: Subtitle, savedWords: Set<string>, extraClass: string = ''): string {
   const rawTokens = tokenTrie.segment(subtitle.text);
@@ -18,7 +19,8 @@ export function renderSubtitleRow(subtitle: Subtitle, savedWords: Set<string>, e
     <div class="subtitle-row ${extraClass}" data-id="${subtitle.id}" data-start="${subtitle.start}">
       ${tokens.map(token => {
         const isSaved = savedWords.has(token) ? 'saved' : '';
-        return `<span class="token ${isSaved}" data-token="${token}">${token}</span>`;
+        const heatClass = getHeatClass(token, savedWords);
+        return `<span class="token ${isSaved} ${heatClass}" data-token="${token}">${token}</span>`;
       }).join('')}
     </div>
   `;
