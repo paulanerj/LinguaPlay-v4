@@ -175,14 +175,17 @@ video {
 }
 
 .token.active {
-  background: var(--token-active);
+  background: rgba(56, 189, 248, 0.2);
+  box-shadow: 0 0 0 2px var(--accent-primary);
   color: white !important;
+  font-weight: 600;
+  z-index: 10;
 }
 
 .token.attention-target {
-  outline: 2px solid rgba(255, 255, 255, 0.3);
-  outline-offset: 1px;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
 }
 
 /* Quick Preview Tooltip */

@@ -230,18 +230,16 @@ export function initUI() {
 
     // 3. Handle Focus Panel & Example Sandbox
     if (state.selectedToken !== lastSelectedToken || state.savedWords !== lastSavedWordsRef || true) {
-      // Visual feedback for selected token
-      if (state.selectedToken !== lastSelectedToken) {
-        document.querySelectorAll('.token.active').forEach(el => el.classList.remove('active'));
-        if (state.selectedToken) {
-          document.querySelectorAll(`.token[data-token="${state.selectedToken}"]`).forEach(el => el.classList.add('active'));
-        }
-      }
-
       lastSelectedToken = state.selectedToken;
       lastSavedWordsRef = state.savedWords;
 
       renderFocusPanel();
+
+      // Visual feedback for selected token - Apply AFTER rendering panels
+      document.querySelectorAll('.token.active').forEach(el => el.classList.remove('active'));
+      if (state.selectedToken) {
+        document.querySelectorAll(`.token[data-token="${state.selectedToken}"]`).forEach(el => el.classList.add('active'));
+      }
     }
   });
 
