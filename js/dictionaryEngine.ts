@@ -14,6 +14,8 @@ export interface DictEntry {
   pinyin: string;
   meaning: string;
   pos?: string;
+  hsk?: number;
+  frequencyBand?: 'common' | 'mid' | 'rare';
 }
 
 class DictionaryEngine {
@@ -22,11 +24,21 @@ class DictionaryEngine {
 
   constructor() {
     // Initial curated entries (High priority)
-    this.curatedEntries.set("你好", { pinyin: "nǐ hǎo", meaning: "Hello" });
-    this.curatedEntries.set("学习", { pinyin: "xué xí", meaning: "To study; to learn" });
-    this.curatedEntries.set("LinguaPlay", { pinyin: "Líng-guǎ-Plāy", meaning: "The name of this language learning application." });
-    this.curatedEntries.set("欢迎", { pinyin: "huān yíng", meaning: "Welcome" });
-    this.curatedEntries.set("来到", { pinyin: "lái dào", meaning: "To arrive at; to come to" });
+    // Common / HSK 1
+    this.curatedEntries.set("你好", { pinyin: "nǐ hǎo", meaning: "Hello", hsk: 1, frequencyBand: 'common' });
+    this.curatedEntries.set("学习", { pinyin: "xué xí", meaning: "To study; to learn", hsk: 1, frequencyBand: 'common' });
+    this.curatedEntries.set("欢迎", { pinyin: "huān yíng", meaning: "Welcome", hsk: 1, frequencyBand: 'common' });
+    this.curatedEntries.set("来到", { pinyin: "lái dào", meaning: "To arrive at; to come to", hsk: 1, frequencyBand: 'common' });
+    this.curatedEntries.set("我们", { pinyin: "wǒ men", meaning: "We; us", hsk: 1, frequencyBand: 'common' });
+    this.curatedEntries.set("一起", { pinyin: "yì qǐ", meaning: "Together", hsk: 1, frequencyBand: 'common' });
+    
+    // Mid
+    this.curatedEntries.set("LinguaPlay", { pinyin: "Líng-guǎ-Plāy", meaning: "The name of this language learning application.", frequencyBand: 'mid' });
+    this.curatedEntries.set("学习者", { pinyin: "xué xí zhě", meaning: "Learner", frequencyBand: 'mid' });
+    
+    // Rare
+    this.curatedEntries.set("认知", { pinyin: "rèn zhī", meaning: "Cognition", frequencyBand: 'rare' });
+    this.curatedEntries.set("引擎", { pinyin: "yǐng qíng", meaning: "Engine", frequencyBand: 'rare' });
   }
 
   /**
@@ -52,12 +64,23 @@ class DictionaryEngine {
       // TASK 2: Strict validation of lexicon JSON structure
       if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
         for (const [word, info] of Object.entries(data)) {
-          if (Array.isArray(info) && info.length >= 2 && typeof info[0] === 'string' && typeof info[1] === 'string') {
-            if (!this.curatedEntries.has(word)) {
-              const [pinyin, meaning, pos] = info as [string, string, string | undefined];
-              this.dictionary.set(word, { pinyin, meaning, pos });
+          if (this.curatedEntries.has(word)) continue;
+
+          // Support new object format
+          if (typeof info === 'object' && info !== null && !Array.isArray(info)) {
+            const entry = info as DictEntry;
+            if (entry.pinyin && entry.meaning) {
+              this.dictionary.set(word, entry);
               accepted++;
+            } else {
+              rejected++;
             }
+          } 
+          // Support legacy array format
+          else if (Array.isArray(info) && info.length >= 2 && typeof info[0] === 'string' && typeof info[1] === 'string') {
+            const [pinyin, meaning, pos] = info as [string, string, string | undefined];
+            this.dictionary.set(word, { pinyin, meaning, pos });
+            accepted++;
           } else {
             rejected++;
           }

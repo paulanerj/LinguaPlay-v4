@@ -26,6 +26,18 @@ async function bootstrap() {
 2
 00:00:05,000 --> 00:00:08,000
 我们一起学习中文。
+
+3
+00:00:09,000 --> 00:00:12,000
+这个认知引擎帮助学习者。
+
+4
+00:00:13,000 --> 00:00:16,000
+学习，学习，再学习！
+
+5
+00:00:17,000 --> 00:00:20,000
+Hello world, this is a test.
   `;
   const subs = parseSRT(sampleSRT);
   stateManager.setState({ subtitles: subs });

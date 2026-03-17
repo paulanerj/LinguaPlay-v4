@@ -124,7 +124,7 @@ export function initUI() {
         </div>
         <div class="bg-slate-800 p-2 rounded border border-slate-700">
           <span class="opacity-50">HSK Level:</span> 
-          <span class="font-semibold text-accent-primary">${getHSKLevel(token) || 'N/A'}</span>
+          <span class="font-semibold text-accent-primary">${entry?.hsk || getHSKLevel(token) || 'N/A'}</span>
         </div>
       </div>
 
@@ -150,8 +150,12 @@ export function initUI() {
     console.log(`[AttentionSignal] Focus panel synced for: ${token} (Suggested: ${isSuggested})`);
   }
 
-  function updateLoadStatus(msg: string) {
+  function updateLoadStatus(msg: string, isDiagnostic = false) {
     loadStatus.textContent = msg;
+    const diagLabel = document.getElementById('diagnostic-label');
+    if (diagLabel) {
+      diagLabel.classList.toggle('hidden', !isDiagnostic);
+    }
   }
 
   function resetContentState() {
@@ -342,6 +346,18 @@ export function initUI() {
 2
 00:00:05,000 --> 00:00:08,000
 我们一起学习中文。
+
+3
+00:00:09,000 --> 00:00:12,000
+这个认知引擎帮助学习者。
+
+4
+00:00:13,000 --> 00:00:16,000
+学习，学习，再学习！
+
+5
+00:00:17,000 --> 00:00:20,000
+Hello world, this is a test.
     `;
     if (video.src.startsWith('blob:')) {
       URL.revokeObjectURL(video.src);
@@ -352,7 +368,7 @@ export function initUI() {
     const subs = parseSRT(demoSRT);
     resetContentState();
     stateManager.setState({ subtitles: subs, videoLoaded: true });
-    updateLoadStatus("Demo Mode Active");
+    updateLoadStatus("Diagnostic Demo Active", true);
   });
 
   inputVideo.addEventListener('change', (e) => {

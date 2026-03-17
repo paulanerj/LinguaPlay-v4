@@ -48,6 +48,11 @@ export function classifyToken(token: string, savedWords: Set<string>): HeatLevel
   
   const entry = dictionaryEngine.getEntry(token);
   if (entry) {
+    if (entry.frequencyBand) return entry.frequencyBand;
+    if (entry.hsk && entry.hsk <= 2) return 'common';
+    if (entry.hsk && entry.hsk <= 4) return 'mid';
+    if (entry.hsk) return 'rare';
+
     // Heuristic: Shorter words in dictionary are often more common
     return token.length <= 2 ? 'mid' : 'rare';
   }

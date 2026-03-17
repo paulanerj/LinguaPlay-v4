@@ -247,4 +247,16 @@ video {
   color: var(--accent-primary);
 }
 
+.diagnostic-label {
+  background: rgba(153, 27, 27, 0.4);
+  color: #fecaca;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(153, 27, 27, 0.6);
+}
+
 .hidden { display: none !important; }
