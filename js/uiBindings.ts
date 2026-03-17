@@ -8,6 +8,8 @@ import { dictionaryEngine } from './dictionaryEngine.ts';
 import { renderSubtitleRow } from './subtitleRenderer.ts';
 import { syncSubtitles } from './subtitleSync.ts';
 import { getHeatLabel } from './frequencyHeatmap.ts';
+import { attentionEngine } from './attentionEngine.ts';
+import { parseSRT } from './subtitleParser.ts';
 
 export function initUI() {
   const video = document.querySelector('video') as HTMLVideoElement;
@@ -15,11 +17,161 @@ export function initUI() {
   const transcriptPanel = document.getElementById('transcript-panel')!;
   const focusPanel = document.getElementById('focus-panel')!;
   const tooltip = document.getElementById('quick-preview-tooltip')!;
+  const loadStatus = document.getElementById('load-status')!;
+
+  const inputVideo = document.getElementById('input-video') as HTMLInputElement;
+  const inputSRT = document.getElementById('input-srt') as HTMLInputElement;
+  const btnLoadVideo = document.getElementById('btn-load-video')!;
+  const btnLoadSRT = document.getElementById('btn-load-srt')!;
+  const btnLoadDemo = document.getElementById('btn-load-demo')!;
 
   let transcriptRendered = false;
   let lastActiveId: number | null = null;
   let lastSelectedToken: string | null = null;
   let lastSavedWordsRef: Set<string> | null = null;
+  let lastAttentionTarget: string | null = null;
+
+  function updateAttentionTarget() {
+    const state = stateManager.getState();
+    console.log(`[AttentionSignal] Subtitle Change/Update: ${state.activeSubtitleId}`);
+    
+    if (state.activeSubtitleId === null) {
+      lastAttentionTarget = null;
+      document.querySelectorAll('.token.attention-target').forEach(el => el.classList.remove('attention-target'));
+      return;
+    }
+
+    // Find tokens in the active row (overlay or transcript)
+    const activeRow = subDisplay.querySelector('.overlay-active') || transcriptPanel.querySelector('.transcript-row.active');
+    if (!activeRow) {
+      console.log(`[AttentionSignal] No active row found for target extraction.`);
+      return;
+    }
+
+    const tokenEls = Array.from(activeRow.querySelectorAll('.token')) as HTMLElement[];
+    const tokens = tokenEls.map(el => el.getAttribute('data-token') || '');
+    console.log(`[AttentionSignal] Tokens extracted: ${tokens.join(', ')}`);
+    
+    lastAttentionTarget = attentionEngine.getNextTargetToken(tokens, state.savedWords);
+    console.log(`[AttentionSignal] Attention target selected: ${lastAttentionTarget}`);
+    
+    // Remove existing target class
+    document.querySelectorAll('.token.attention-target').forEach(el => el.classList.remove('attention-target'));
+    
+    if (lastAttentionTarget) {
+      // Add to all instances of this token in active contexts
+      document.querySelectorAll(`.token[data-token="${lastAttentionTarget}"]`).forEach(el => {
+        const row = el.closest('.subtitle-row');
+        if (row && (row.classList.contains('overlay-active') || row.classList.contains('active'))) {
+          el.classList.add('attention-target');
+        }
+      });
+      console.log(`[AttentionSignal] DOM highlight applied to: ${lastAttentionTarget}`);
+    }
+  }
+
+  function renderFocusPanel() {
+    const state = stateManager.getState();
+    const token = state.selectedToken || lastAttentionTarget;
+    const isSuggested = !state.selectedToken && !!lastAttentionTarget;
+
+    if (!token) {
+      focusPanel.innerHTML = `
+        <div class="flex h-full flex-col items-center justify-center opacity-30 text-center gap-4">
+          <p>Select a token to view details and examples.</p>
+          <div class="w-full max-w-[200px] p-3 bg-slate-900/50 rounded-lg border border-slate-800 text-left">
+            <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Difficulty Guide</h4>
+            <div class="flex flex-col gap-1 text-[10px]">
+              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-400"></span> Known (Saved)</div>
+              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Common (Basic)</div>
+              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Medium (Short)</div>
+              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange-500"></span> Rare (Long)</div>
+              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"></span> Unknown</div>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const entry = dictionaryEngine.getEntry(token);
+    const isSaved = state.savedWords.has(token);
+    const heatLabel = getHeatLabel(token, state.savedWords);
+    
+    // Find examples (limit to 5 for performance)
+    const examples = state.subtitles.filter(s => s.text.includes(token)).slice(0, 5);
+    const examplesHtml = examples.map(s => renderSubtitleRow(s, state.savedWords, 'example-row')).join('');
+
+    focusPanel.innerHTML = `
+      ${isSuggested ? '<div class="text-[10px] uppercase tracking-widest text-accent-primary mb-1 font-bold opacity-80 animate-pulse">Suggested Focus</div>' : ''}
+      <div class="flex justify-between items-start mb-4">
+        <h2 class="text-3xl font-bold text-accent-primary">${token}</h2>
+        <button id="btn-save-word" class="save-btn ${isSaved ? 'saved' : ''}">
+          ${isSaved ? '★ Saved' : '☆ Save'}
+        </button>
+      </div>
+      <div class="mb-6">
+        <p class="text-xl italic opacity-80">${entry?.pinyin || 'pinyin'}</p>
+        <p class="text-lg mt-2">${entry?.meaning || 'Meaning not found in current lexicon.'}</p>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-2 text-sm mb-4">
+        <div class="bg-slate-800 p-2 rounded border border-slate-700">
+          <span class="opacity-50">Difficulty:</span> 
+          <span class="font-semibold text-accent-primary">${heatLabel}</span>
+        </div>
+        <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
+          <span>Freq Rank:</span> --
+        </div>
+        <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
+          <span>HSK Level:</span> --
+        </div>
+      </div>
+
+      <!-- Heatmap Legend -->
+      <div class="mb-8 p-3 bg-slate-900/50 rounded-lg border border-slate-800">
+        <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Difficulty Guide</h4>
+        <div class="flex flex-wrap gap-2 text-[10px]">
+          <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-400"></span> Known</div>
+          <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Common</div>
+          <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Mid</div>
+          <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-500"></span> Rare</div>
+          <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Unknown</div>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-semibold mb-3 border-b border-slate-700 pb-1">Example Sandbox</h3>
+        <div class="flex flex-col gap-2">
+          ${examplesHtml}
+        </div>
+      </div>
+    `;
+    console.log(`[AttentionSignal] Focus panel synced for: ${token} (Suggested: ${isSuggested})`);
+  }
+
+  function updateLoadStatus(msg: string) {
+    loadStatus.textContent = msg;
+  }
+
+  function resetContentState() {
+    attentionEngine.resetAttentionCycle();
+    stateManager.setState({
+      activeSubtitleId: null,
+      selectedToken: null,
+      currentTime: 0
+    });
+    transcriptRendered = false;
+    lastActiveId = null;
+    lastSelectedToken = null;
+    lastAttentionTarget = null;
+    
+    // Clear DOM
+    subDisplay.innerHTML = '';
+    transcriptPanel.innerHTML = '';
+    document.querySelectorAll('.token.attention-target').forEach(el => el.classList.remove('attention-target'));
+    renderFocusPanel();
+  }
 
   // Video Time Update
   video.addEventListener('timeupdate', () => {
@@ -65,6 +217,10 @@ export function initUI() {
           activeRow.classList.add('active');
           activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+
+        // Attention Engine Integration
+        attentionEngine.resetAttentionCycle();
+        updateAttentionTarget();
       } else {
         subDisplay.innerHTML = '';
         subDisplay.classList.add('hidden');
@@ -73,7 +229,7 @@ export function initUI() {
     }
 
     // 3. Handle Focus Panel & Example Sandbox
-    if (state.selectedToken !== lastSelectedToken || state.savedWords !== lastSavedWordsRef) {
+    if (state.selectedToken !== lastSelectedToken || state.savedWords !== lastSavedWordsRef || true) {
       // Visual feedback for selected token
       if (state.selectedToken !== lastSelectedToken) {
         document.querySelectorAll('.token.active').forEach(el => el.classList.remove('active'));
@@ -85,76 +241,7 @@ export function initUI() {
       lastSelectedToken = state.selectedToken;
       lastSavedWordsRef = state.savedWords;
 
-      if (state.selectedToken) {
-        const entry = dictionaryEngine.getEntry(state.selectedToken);
-        const isSaved = state.savedWords.has(state.selectedToken);
-        const heatLabel = getHeatLabel(state.selectedToken, state.savedWords);
-        
-        // Find examples (limit to 5 for performance)
-        const examples = state.subtitles.filter(s => s.text.includes(state.selectedToken!)).slice(0, 5);
-        const examplesHtml = examples.map(s => renderSubtitleRow(s, state.savedWords, 'example-row')).join('');
-
-        focusPanel.innerHTML = `
-          <div class="flex justify-between items-start mb-4">
-            <h2 class="text-3xl font-bold text-accent-primary">${state.selectedToken}</h2>
-            <button id="btn-save-word" class="save-btn ${isSaved ? 'saved' : ''}">
-              ${isSaved ? '★ Saved' : '☆ Save'}
-            </button>
-          </div>
-          <div class="mb-6">
-            <p class="text-xl italic opacity-80">${entry?.pinyin || 'pinyin'}</p>
-            <p class="text-lg mt-2">${entry?.meaning || 'Meaning not found in current lexicon.'}</p>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-2 text-sm mb-4">
-            <div class="bg-slate-800 p-2 rounded border border-slate-700">
-              <span class="opacity-50">Difficulty:</span> 
-              <span class="font-semibold text-accent-primary">${heatLabel}</span>
-            </div>
-            <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
-              <span>Freq Rank:</span> --
-            </div>
-            <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
-              <span>HSK Level:</span> --
-            </div>
-          </div>
-
-          <!-- Heatmap Legend -->
-          <div class="mb-8 p-3 bg-slate-900/50 rounded-lg border border-slate-800">
-            <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Difficulty Guide</h4>
-            <div class="flex flex-wrap gap-2 text-[10px]">
-              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-400"></span> Known</div>
-              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Common</div>
-              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Mid</div>
-              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-500"></span> Rare</div>
-              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Unknown</div>
-            </div>
-          </div>
-
-          <div>
-            <h3 class="text-lg font-semibold mb-3 border-b border-slate-700 pb-1">Example Sandbox</h3>
-            <div class="flex flex-col gap-2">
-              ${examplesHtml}
-            </div>
-          </div>
-        `;
-      } else {
-        focusPanel.innerHTML = `
-          <div class="flex h-full flex-col items-center justify-center opacity-30 text-center gap-4">
-            <p>Select a token to view details and examples.</p>
-            <div class="w-full max-w-[200px] p-3 bg-slate-900/50 rounded-lg border border-slate-800 text-left">
-              <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Difficulty Guide</h4>
-              <div class="flex flex-col gap-1 text-[10px]">
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-400"></span> Known (Saved)</div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Common (Basic)</div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Medium (Short)</div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange-500"></span> Rare (Long)</div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"></span> Unknown</div>
-              </div>
-            </div>
-          </div>
-        `;
-      }
+      renderFocusPanel();
     }
   });
 
@@ -165,7 +252,12 @@ export function initUI() {
     // Token Click
     if (target.classList.contains('token')) {
       const token = target.getAttribute('data-token');
-      stateManager.setState({ selectedToken: token });
+      if (token) {
+        attentionEngine.markTokenReviewed(token);
+        // Update target BEFORE state change so subscription sees it
+        updateAttentionTarget();
+        stateManager.setState({ selectedToken: token });
+      }
       return;
     }
 
@@ -239,6 +331,66 @@ export function initUI() {
   // Mobile Token Preview Fallback (Long-press / Tap-hold)
   let touchTimeout: ReturnType<typeof setTimeout>;
   
+  // Local Content Loading Listeners
+  btnLoadVideo.addEventListener('click', () => inputVideo.click());
+  btnLoadSRT.addEventListener('click', () => inputSRT.click());
+  
+  btnLoadDemo.addEventListener('click', () => {
+    const demoSRT = `
+1
+00:00:01,000 --> 00:00:04,000
+你好，欢迎来到LinguaPlay。
+
+2
+00:00:05,000 --> 00:00:08,000
+我们一起学习中文。
+    `;
+    if (video.src.startsWith('blob:')) {
+      URL.revokeObjectURL(video.src);
+    }
+    video.src = "https://www.w3schools.com/html/mov_bbb.mp4";
+    video.load();
+    
+    const subs = parseSRT(demoSRT);
+    resetContentState();
+    stateManager.setState({ subtitles: subs, videoLoaded: true });
+    updateLoadStatus("Demo Mode Active");
+  });
+
+  inputVideo.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) {
+      if (video.src.startsWith('blob:')) {
+        URL.revokeObjectURL(video.src);
+      }
+      const url = URL.createObjectURL(file);
+      video.src = url;
+      video.load();
+      stateManager.setState({ videoLoaded: true });
+      updateLoadStatus(`Video: ${file.name}`);
+    }
+  });
+
+  inputSRT.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        try {
+          const subs = parseSRT(text);
+          if (subs.length === 0) throw new Error("Empty subtitle set");
+          resetContentState();
+          stateManager.setState({ subtitles: subs });
+          updateLoadStatus(`SRT: ${file.name}`);
+        } catch (err) {
+          updateLoadStatus(`Parse Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
+      };
+      reader.readAsText(file);
+    }
+  });
+
   document.body.addEventListener('touchstart', (e) => {
     const target = e.target as HTMLElement;
     if (target.classList.contains('token')) {

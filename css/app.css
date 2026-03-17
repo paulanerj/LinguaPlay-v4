@@ -179,6 +179,12 @@ video {
   color: white !important;
 }
 
+.token.attention-target {
+  outline: 2px solid rgba(255, 255, 255, 0.3);
+  outline-offset: 1px;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
 /* Quick Preview Tooltip */
 #quick-preview-tooltip {
   position: fixed;
@@ -206,6 +212,22 @@ video {
 
 .save-btn:hover {
   background: #334155;
+}
+
+.ui-btn {
+  background: #334155;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  border: 1px solid #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ui-btn:hover {
+  background: #475569;
+  border-color: var(--accent-primary);
 }
 
 .save-btn.saved {
