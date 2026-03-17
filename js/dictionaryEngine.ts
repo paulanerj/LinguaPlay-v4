@@ -24,6 +24,9 @@ class DictionaryEngine {
     // Initial curated entries (High priority)
     this.curatedEntries.set("你好", { pinyin: "nǐ hǎo", meaning: "Hello" });
     this.curatedEntries.set("学习", { pinyin: "xué xí", meaning: "To study; to learn" });
+    this.curatedEntries.set("LinguaPlay", { pinyin: "Líng-guǎ-Plāy", meaning: "The name of this language learning application." });
+    this.curatedEntries.set("欢迎", { pinyin: "huān yíng", meaning: "Welcome" });
+    this.curatedEntries.set("来到", { pinyin: "lái dào", meaning: "To arrive at; to come to" });
   }
 
   /**
@@ -83,7 +86,19 @@ class DictionaryEngine {
   }
 
   getEntry(token: string): DictEntry | null {
-    return this.dictionary.get(token) || null;
+    if (!token) return null;
+    const entry = this.dictionary.get(token);
+    if (entry) return entry;
+
+    // Fallback: Case-insensitive lookup for Latin characters
+    if (/^[a-zA-Z]+$/.test(token)) {
+      const lower = token.toLowerCase();
+      for (const [key, val] of this.dictionary.entries()) {
+        if (key.toLowerCase() === lower) return val;
+      }
+    }
+
+    return null;
   }
 }
 

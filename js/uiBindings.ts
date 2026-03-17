@@ -7,7 +7,7 @@ import { stateManager } from './state.ts';
 import { dictionaryEngine } from './dictionaryEngine.ts';
 import { renderSubtitleRow } from './subtitleRenderer.ts';
 import { syncSubtitles } from './subtitleSync.ts';
-import { getHeatLabel } from './frequencyHeatmap.ts';
+import { getHeatLabel, getHSKLevel } from './frequencyHeatmap.ts';
 import { attentionEngine } from './attentionEngine.ts';
 import { parseSRT } from './subtitleParser.ts';
 
@@ -97,6 +97,7 @@ export function initUI() {
     const entry = dictionaryEngine.getEntry(token);
     const isSaved = state.savedWords.has(token);
     const heatLabel = getHeatLabel(token, state.savedWords);
+    const isChinese = /[\u4e00-\u9fa5]/.test(token);
     
     // Find examples (limit to 5 for performance)
     const examples = state.subtitles.filter(s => s.text.includes(token)).slice(0, 5);
@@ -111,8 +112,9 @@ export function initUI() {
         </button>
       </div>
       <div class="mb-6">
-        <p class="text-xl italic opacity-80">${entry?.pinyin || 'pinyin'}</p>
-        <p class="text-lg mt-2">${entry?.meaning || 'Meaning not found in current lexicon.'}</p>
+        <p class="text-xl italic opacity-80">${entry?.pinyin || (isChinese ? 'pinyin unknown' : 'non-lexical')}</p>
+        <p class="text-lg mt-2">${entry?.meaning || (isChinese ? 'This token is not in the current lexicon. Try searching for it online.' : 'This appears to be a proper noun or punctuation.')}</p>
+        ${!entry ? `<a href="https://www.mdbg.net/chinese/dictionary?page=worddict&wdrst=0&wdqb=${token}" target="_blank" class="text-xs text-accent-primary underline mt-2 inline-block">Search on MDBG</a>` : ''}
       </div>
       
       <div class="grid grid-cols-2 gap-2 text-sm mb-4">
@@ -120,11 +122,9 @@ export function initUI() {
           <span class="opacity-50">Difficulty:</span> 
           <span class="font-semibold text-accent-primary">${heatLabel}</span>
         </div>
-        <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
-          <span>Freq Rank:</span> --
-        </div>
-        <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
-          <span>HSK Level:</span> --
+        <div class="bg-slate-800 p-2 rounded border border-slate-700">
+          <span class="opacity-50">HSK Level:</span> 
+          <span class="font-semibold text-accent-primary">${getHSKLevel(token) || 'N/A'}</span>
         </div>
       </div>
 
@@ -155,7 +155,7 @@ export function initUI() {
   }
 
   function resetContentState() {
-    attentionEngine.resetAttentionCycle();
+    attentionEngine.resetSessionReviewedTokens();
     stateManager.setState({
       activeSubtitleId: null,
       selectedToken: null,
