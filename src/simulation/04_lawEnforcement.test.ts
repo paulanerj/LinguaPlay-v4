@@ -28,7 +28,7 @@ describe("Platform Architecture Law Enforcement", () => {
     runner.ingestStream(FixtureFamilyWithWeakFact);
     
     const weakFactMastery = state.skillState.mastery["fact-mul-3-4"];
-    const familyMastery = state.skillState.mastery["sequence-family"];
+    const familyMastery = state.skillState.mastery["rollup-family"];
     
     expect(weakFactMastery.state).toBe("FRAGILE");
     
@@ -36,7 +36,7 @@ describe("Platform Architecture Law Enforcement", () => {
     expect(familyMastery.state).toBe("EMERGING");
     
     // Prove no Achievement Meaning was emitted for the family
-    const familyAchievements = state.achievements.meanings.filter(m => m.canonicalSkillId === "sequence-family");
+    const familyAchievements = state.achievements.meanings.filter(m => m.canonicalSkillId === "rollup-family");
     expect(familyAchievements.length).toBe(0);
   });
 });

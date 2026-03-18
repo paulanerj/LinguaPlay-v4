@@ -28,7 +28,7 @@ export class StubCanonicalization implements CanonicalizationPipeline {
       id = `fact-${ref.operation}-${ref.operands.join("-")}`;
       kind = "direct";
     } else if (ref.tier === "partial") {
-      id = `sequence-${ref.operation}`;
+      id = `${ref.structure}-${ref.operation}`;
       kind = "partial";
     } else if (ref.tier === "fallback") {
       id = `fallback-${ref.rawStepHash}`;
@@ -70,7 +70,7 @@ export class StubMasteryEvaluation implements MasteryEvaluationPipeline {
 
     if (newEvidence.canonicalSkillId.startsWith("fallback-")) {
       nextState = "OBSERVED"; // Law: Fallback ceiling
-    } else if (newEvidence.canonicalSkillId.startsWith("sequence-family")) {
+    } else if (newEvidence.canonicalSkillId.startsWith("rollup-family")) {
       // Law: Family rollups cannot hide weak atomic facts
       const hasWeakChild = Object.values(this.test_atomicFactRegistry).includes("FRAGILE");
       if (hasWeakChild) {

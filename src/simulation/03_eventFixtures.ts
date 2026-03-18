@@ -29,5 +29,5 @@ export const FixtureFamilyWithWeakFact: RawEngineEvent[] = [
   // One weak fact in the family
   { ...baseEvent, eventSeq: 3, timestampMs: 3000, stepIndex: 3, eventType: "ANSWER_INCORRECT", skillRef: { tier: "resolved", domain: "arithmetic", operation: "mul", structure: "fact", operands: [3, 4] } },
   // Attempt to process a family rollup structural event
-  { ...baseEvent, eventSeq: 4, timestampMs: 4000, stepIndex: 4, eventType: "ANSWER_CORRECT", skillRef: { tier: "partial", domain: "arithmetic", operation: "family", structure: "sequence" } }
+  { ...baseEvent, eventSeq: 4, timestampMs: 4000, stepIndex: 4, eventType: "ANSWER_CORRECT", skillRef: { tier: "partial", domain: "arithmetic", operation: "family", structure: "rollup" } }
 ];

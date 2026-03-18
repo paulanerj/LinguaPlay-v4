@@ -4,7 +4,8 @@ import {
   EvidenceStore, 
   SessionStore, 
   AchievementStore, 
-  RewardSignalStore 
+  RewardSignalStore,
+  LearnerProfile
 } from "../models/state";
 import { 
   CanonicalSkillRecord, 
@@ -15,7 +16,7 @@ import {
 } from "../contracts/types";
 
 export class InMemoryStateContainer implements ParentRewardPlatformState {
-  learnerProfiles: Record<string, any> = {};
+  learnerProfiles: Record<string, LearnerProfile> = {};
   skillState: SkillStateStore = {
     canonicalSkills: {},
     mastery: {}
