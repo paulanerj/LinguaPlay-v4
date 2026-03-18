@@ -39,26 +39,38 @@ import { dictionaryEngine } from './dictionaryEngine.ts';
  * 4. Not in Dictionary -> unknown
  */
 export function classifyToken(token: string, savedWords: Set<string>): HeatLevel {
-  if (savedWords.has(token)) return 'known';
-  
-  // Non-Chinese characters are "known" by default (ignored for learning)
-  if (!/[\u4e00-\u9fa5]/.test(token)) return 'known';
+  let level: HeatLevel = 'unknown';
 
-  if (COMMON_TOKENS.has(token)) return 'common';
-  
-  const entry = dictionaryEngine.getEntry(token);
-  if (entry) {
-    if (entry.frequencyBand) return entry.frequencyBand;
-    if (entry.hsk && entry.hsk <= 2) return 'common';
-    if (entry.hsk && entry.hsk <= 4) return 'mid';
-    if (entry.hsk) return 'rare';
-
-    // Heuristic: Shorter words in dictionary are often more common
-    return token.length <= 2 ? 'mid' : 'rare';
+  if (savedWords.has(token)) {
+    level = 'known';
+  } else if (!/[\u4e00-\u9fa5]/.test(token)) {
+    // Non-Chinese characters are "known" by default (ignored for learning)
+    level = 'known';
+  } else if (COMMON_TOKENS.has(token)) {
+    level = 'common';
+  } else {
+    const entry = dictionaryEngine.getEntry(token);
+    if (entry) {
+      if (entry.frequencyBand) {
+        level = entry.frequencyBand;
+      } else if (entry.hsk && entry.hsk <= 2) {
+        level = 'common';
+      } else if (entry.hsk && entry.hsk <= 4) {
+        level = 'mid';
+      } else if (entry.hsk) {
+        level = 'rare';
+      } else {
+        // Heuristic: Shorter words in dictionary are often more common
+        level = token.length <= 2 ? 'mid' : 'rare';
+      }
+    } else {
+      // Not in dictionary or common set
+      level = 'unknown';
+    }
   }
   
-  // Not in dictionary or common set
-  return 'unknown';
+  console.log(`[HEATMAP] token=${token} level=${level}`);
+  return level;
 }
 
 export function getHeatClass(token: string, savedWords: Set<string>): string {

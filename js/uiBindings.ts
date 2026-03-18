@@ -38,6 +38,8 @@ export function initUI() {
     if (state.activeSubtitleId === null) {
       lastAttentionTarget = null;
       document.querySelectorAll('.token.attention-target').forEach(el => el.classList.remove('attention-target'));
+      const debugLabel = document.getElementById('debug-attention-label');
+      if (debugLabel) debugLabel.classList.add('hidden');
       return;
     }
 
@@ -58,15 +60,28 @@ export function initUI() {
     // Remove existing target class
     document.querySelectorAll('.token.attention-target').forEach(el => el.classList.remove('attention-target'));
     
+    const debugLabel = document.getElementById('debug-attention-label');
+    if (debugLabel) debugLabel.classList.add('hidden');
+
     if (lastAttentionTarget) {
       // Add to all instances of this token in active contexts
+      let firstEl: HTMLElement | null = null;
       document.querySelectorAll(`.token[data-token="${lastAttentionTarget}"]`).forEach(el => {
         const row = el.closest('.subtitle-row');
         if (row && (row.classList.contains('overlay-active') || row.classList.contains('active'))) {
           el.classList.add('attention-target');
+          if (!firstEl) firstEl = el as HTMLElement;
         }
       });
       console.log(`[AttentionSignal] DOM highlight applied to: ${lastAttentionTarget}`);
+
+      // Position debug label
+      if (firstEl && debugLabel) {
+        const rect = firstEl.getBoundingClientRect();
+        debugLabel.style.left = `${rect.left}px`;
+        debugLabel.style.top = `${rect.top - 25}px`;
+        debugLabel.classList.remove('hidden');
+      }
     }
   }
 
@@ -76,9 +91,15 @@ export function initUI() {
     const isSuggested = !state.selectedToken && !!lastAttentionTarget;
 
     if (!token) {
+      const heatLabel = lastAttentionTarget ? getHeatLabel(lastAttentionTarget, state.savedWords) : '';
       focusPanel.innerHTML = `
         <div class="flex h-full flex-col items-center justify-center opacity-30 text-center gap-4">
-          <p>Select a token to view details and examples.</p>
+          ${lastAttentionTarget ? `
+            <div class="mb-4 p-4 bg-accent-primary/10 rounded-xl border border-accent-primary/20 animate-pulse">
+              <div class="text-[10px] uppercase tracking-widest text-accent-primary mb-1 font-bold">Suggested Focus: ${lastAttentionTarget}</div>
+              <div class="text-xs text-white/60 italic">Reason: ${heatLabel} difficulty lexical target</div>
+            </div>
+          ` : '<p>Select a token to view details and examples.</p>'}
           <div class="w-full max-w-[200px] p-3 bg-slate-900/50 rounded-lg border border-slate-800 text-left">
             <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Difficulty Guide</h4>
             <div class="flex flex-col gap-1 text-[10px]">
@@ -341,23 +362,35 @@ export function initUI() {
     const demoSRT = `
 1
 00:00:01,000 --> 00:00:04,000
-你好，欢迎来到LinguaPlay。
+你好，我们一起学习中文。
 
 2
 00:00:05,000 --> 00:00:08,000
-我们一起学习中文。
+这个认知系统帮助学习者。
 
 3
 00:00:09,000 --> 00:00:12,000
-这个认知引擎帮助学习者。
+学习者学习再学习！
 
 4
 00:00:13,000 --> 00:00:16,000
-学习，学习，再学习！
+来到这个系统的用户。
 
 5
 00:00:17,000 --> 00:00:20,000
-Hello world, this is a test.
+LinguaPlay is powerful.
+
+6
+00:00:21,000 --> 00:00:24,000
+这是一个极其复杂的系统架构测试。
+
+7
+00:00:25,000 --> 00:00:28,000
+帮助帮助帮助帮助。
+
+8
+00:00:29,000 --> 00:00:32,000
+再学习，再理解，再进步。
     `;
     if (video.src.startsWith('blob:')) {
       URL.revokeObjectURL(video.src);

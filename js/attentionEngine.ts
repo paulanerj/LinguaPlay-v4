@@ -35,6 +35,7 @@ class AttentionEngine {
    * Also tracks it for the session to lower its priority later (future task).
    */
   markTokenReviewed(token: string) {
+    console.log(`[ATTENTION] reviewed=${token}`);
     this.reviewedTokens.add(token);
     this.sessionReviewedTokens.add(token);
   }
@@ -46,6 +47,7 @@ class AttentionEngine {
    */
   getNextTargetToken(tokens: string[], savedWords: Set<string>): string | null {
     // Filter for meaningful tokens (Chinese characters or in dictionary)
+    // LAW D & E: Must never target punctuation or latin tokens
     const meaningfulTokens = tokens.filter(t => 
       /[\u4e00-\u9fa5]/.test(t) || dictionaryEngine.getEntry(t) !== null
     );
@@ -60,6 +62,7 @@ class AttentionEngine {
         if (tokenLevel !== 'unknown' && this.sessionReviewedTokens.has(token)) continue;
 
         if (tokenLevel === level) {
+          console.log(`[ATTENTION] target=${token} level=${level}`);
           return token;
         }
       }
@@ -70,10 +73,14 @@ class AttentionEngine {
       for (const token of meaningfulTokens) {
         if (this.reviewedTokens.has(token)) continue;
         const tokenLevel = classifyToken(token, savedWords);
-        if (tokenLevel === level) return token;
+        if (tokenLevel === level) {
+          console.log(`[ATTENTION] target=${token} level=${level} (session fallback)`);
+          return token;
+        }
       }
     }
 
+    console.log(`[ATTENTION] target=null (no valid targets remaining)`);
     return null;
   }
 }

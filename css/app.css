@@ -159,6 +159,7 @@ video {
 .token.saved {
   border-bottom: 2px dashed var(--accent-primary);
   color: var(--accent-primary);
+  z-index: 5;
 }
 
 /* Heatmap Engine Styles */
@@ -179,7 +180,7 @@ video {
   box-shadow: 0 0 0 2px var(--accent-primary), 0 0 10px rgba(56, 189, 248, 0.5);
   color: white !important;
   font-weight: 700;
-  z-index: 20;
+  z-index: 50;
   position: relative;
 }
 
@@ -188,6 +189,8 @@ video {
   outline-offset: 2px;
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
   animation: target-pulse 2s infinite;
+  z-index: 20;
+  position: relative;
 }
 
 @keyframes target-pulse {
