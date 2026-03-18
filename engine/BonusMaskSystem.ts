@@ -16,7 +16,8 @@ export class BonusMaskSystem {
   /**
    * Classifies a token into a difficulty band.
    */
-  static classify(token: string, savedWords: Set<string>, dictionary: DictionaryLookup): HeatLevel {
+  static classify(token: string, savedWords: Set<string>, dictionary: DictionaryLookup): HeatLevel | null {
+    // 1. savedWords -> known
     if (savedWords.has(token)) {
       return 'known';
     }
@@ -24,17 +25,12 @@ export class BonusMaskSystem {
     const result = dictionary.getEntry(token);
     const entry = result.entry;
 
-    // 1. Non-lexical check
-    if (result.truthStatus === LexiconTruthStatus.NON_LEXICAL) {
-      return 'known'; // Treat as known to avoid highlighting
-    }
-
-    // 2. Curated check
+    // 2. truthStatus CURATED -> common
     if (result.truthStatus === LexiconTruthStatus.CURATED) {
       return 'common';
     }
 
-    // 3. Found check
+    // 3. truthStatus FOUND -> use metadata band
     if (result.truthStatus === LexiconTruthStatus.FOUND && entry) {
       if (entry.hsk && entry.hsk <= 2) return 'common';
       if (entry.hsk && entry.hsk <= 4) return 'mid';
@@ -42,9 +38,14 @@ export class BonusMaskSystem {
       return 'rare';
     }
 
-    // 4. Missing check
+    // 4. truthStatus MISSING -> unknown
     if (result.truthStatus === LexiconTruthStatus.MISSING) {
       return 'unknown';
+    }
+
+    // 5. NON_LEXICAL -> skip classification
+    if (result.truthStatus === LexiconTruthStatus.NON_LEXICAL) {
+      return null;
     }
 
     return 'unknown';

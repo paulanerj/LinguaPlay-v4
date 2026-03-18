@@ -8,6 +8,8 @@ import { parseSRT } from './subtitleParser.ts';
 import { stateManager } from './state.ts';
 import { dictionaryEngine } from './dictionaryEngine.ts';
 
+export const PEDAGOGICAL_DEMO = true;
+
 async function bootstrap() {
   console.log("LinguaPlay Initializing...");
 
@@ -48,7 +50,14 @@ LinguaPlay is powerful. (Latin Non-Lexical)
 标点符号测试：，。！？；：(Punctuation Non-Lexical)
   `;
   const subs = parseSRT(sampleSRT);
-  stateManager.setState({ subtitles: subs });
+  stateManager.setState({ subtitles: subs, pedagogicalDemo: PEDAGOGICAL_DEMO });
+
+  // Task 6: Pedagogical Demo - Auto-pause first subtitle
+  if (PEDAGOGICAL_DEMO && subs.length > 0) {
+    const video = document.querySelector('video') as HTMLVideoElement;
+    video.currentTime = subs[0].start;
+    video.pause();
+  }
 
   console.log("LinguaPlay Ready.");
 }

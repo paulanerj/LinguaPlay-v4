@@ -45,6 +45,16 @@
     <div id="quick-preview-tooltip" class="hidden"></div>
     <div id="debug-attention-label" class="hidden fixed bg-white text-black text-[10px] px-2 py-1 rounded shadow-lg z-[100] font-bold pointer-events-none">Suggested Next Learning Target</div>
 
+    <!-- Heatmap Legend -->
+    <div id="heatmap-legend" class="fixed bottom-4 right-4 z-50 bg-slate-900/80 border border-white/10 rounded-lg p-2 flex flex-col gap-1 text-[9px] uppercase tracking-tighter opacity-60 pointer-events-none">
+      <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-400"></span> Known</div>
+      <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Common</div>
+      <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Medium</div>
+      <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange-500"></span> Rare</div>
+      <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"></span> Unknown</div>
+      <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-slate-500"></span> Non-lexical</div>
+    </div>
+
     <script type="module" src="/js/app.ts"></script>
   </body>
 </html>

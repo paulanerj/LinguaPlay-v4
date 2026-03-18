@@ -10,8 +10,10 @@ import { syncSubtitles } from './subtitleSync.ts';
 import { getHeatLabel, getHSKLevel } from './frequencyHeatmap.ts';
 import { attentionEngine } from './attentionEngine.ts';
 import { parseSRT } from './subtitleParser.ts';
+import { initAttentionDebug } from './attentionDebug.ts';
 
 export function initUI() {
+  initAttentionDebug();
   const video = document.querySelector('video') as HTMLVideoElement;
   const subDisplay = document.getElementById('subtitle-display')!;
   const transcriptPanel = document.getElementById('transcript-panel')!;
@@ -70,6 +72,9 @@ export function initUI() {
         const row = el.closest('.subtitle-row');
         if (row && (row.classList.contains('overlay-active') || row.classList.contains('active'))) {
           el.classList.add('attention-target');
+          if (state.pedagogicalDemo) {
+            el.classList.add('pedagogical-pulse');
+          }
           if (!firstEl) firstEl = el as HTMLElement;
         }
       });
@@ -91,13 +96,24 @@ export function initUI() {
     const isSuggested = !state.selectedToken && !!lastAttentionTarget;
 
     if (!token) {
-      const heatLabel = lastAttentionTarget ? getHeatLabel(lastAttentionTarget, state.savedWords) : '';
+      let reasonLabel = '';
+      if (lastAttentionTarget) {
+        const heatLabel = getHeatLabel(lastAttentionTarget, state.savedWords);
+        const reasonMap: Record<string, string> = {
+          'unknown': 'New word',
+          'rare': 'Rare word',
+          'mid': 'Medium familiarity',
+          'common': 'Review opportunity'
+        };
+        reasonLabel = reasonMap[heatLabel.toLowerCase()] || `${heatLabel} difficulty lexical target`;
+      }
+
       focusPanel.innerHTML = `
         <div class="flex h-full flex-col items-center justify-center opacity-30 text-center gap-4">
           ${lastAttentionTarget ? `
             <div class="mb-4 p-4 bg-accent-primary/10 rounded-xl border border-accent-primary/20 animate-pulse">
               <div class="text-[10px] uppercase tracking-widest text-accent-primary mb-1 font-bold">Suggested Focus: ${lastAttentionTarget}</div>
-              <div class="text-xs text-white/60 italic">Reason: ${heatLabel} difficulty lexical target</div>
+              <div class="text-xs text-white/60 italic">Reason: ${reasonLabel}</div>
             </div>
           ` : '<p>Select a token to view details and examples.</p>'}
           <div class="w-full max-w-[200px] p-3 bg-slate-900/50 rounded-lg border border-slate-800 text-left">
@@ -126,6 +142,14 @@ export function initUI() {
       ? examples.map(s => renderSubtitleRow(s, state.savedWords, 'example-row')).join('')
       : '<div class="text-xs opacity-40 italic p-4 text-center border border-dashed border-slate-700 rounded">No examples available in current corpus</div>';
 
+    const isFirstSub = state.activeSubtitleId === (state.subtitles[0]?.id || 0);
+    const pedagogicalMsg = (state.pedagogicalDemo && isFirstSub && isSuggested) ? `
+      <div class="mt-4 p-3 bg-blue-900/40 border border-blue-400/30 rounded-lg text-xs leading-relaxed">
+        <div class="font-bold text-blue-300 mb-1">How it works:</div>
+        LinguaPlay analyzes subtitles in real-time. The <span class="text-accent-primary font-bold">highlighted word</span> is your optimal next learning target based on your history and word difficulty.
+      </div>
+    ` : '';
+
     let statusMessage = '';
     let statusColor = 'text-white/60';
 
@@ -152,8 +176,25 @@ export function initUI() {
         break;
     }
 
+    let reasonLabel = '';
+    if (isSuggested && token) {
+      const heatLabel = getHeatLabel(token, state.savedWords);
+      const reasonMap: Record<string, string> = {
+        'unknown': 'New word',
+        'rare': 'Rare word',
+        'mid': 'Medium familiarity',
+        'common': 'Review opportunity'
+      };
+      reasonLabel = reasonMap[heatLabel.toLowerCase()] || `${heatLabel} difficulty lexical target`;
+    }
+
     focusPanel.innerHTML = `
-      ${isSuggested ? '<div class="text-[10px] uppercase tracking-widest text-accent-primary mb-1 font-bold opacity-80 animate-pulse">Suggested Focus</div>' : ''}
+      ${isSuggested ? `
+        <div class="mb-2 p-2 bg-accent-primary/10 rounded-lg border border-accent-primary/20">
+          <div class="text-[10px] uppercase tracking-widest text-accent-primary mb-1 font-bold opacity-80 animate-pulse">Suggested Focus</div>
+          <div class="text-[10px] text-white/60 italic">Reason: ${reasonLabel}</div>
+        </div>
+      ` : ''}
       <div class="flex justify-between items-start mb-2">
         <h2 class="text-3xl font-bold text-accent-primary">${token}</h2>
         <button id="btn-save-word" class="save-btn ${isSaved ? 'saved' : ''}">
@@ -192,11 +233,13 @@ export function initUI() {
       </div>
 
       <div>
-        <h3 class="text-lg font-semibold mb-3 border-b border-slate-700 pb-1">Example Sandbox</h3>
+        <h3 class="text-lg font-semibold mb-1 border-b border-slate-700 pb-1">Example Sandbox</h3>
+        <div class="text-[10px] opacity-40 italic mb-2">Examples from this video (not full dictionary)</div>
         <div class="flex flex-col gap-2">
           ${examplesHtml}
         </div>
       </div>
+      ${pedagogicalMsg}
     `;
     console.log(`[AttentionSignal] Focus panel synced for: ${token} (Suggested: ${isSuggested})`);
   }
@@ -348,12 +391,20 @@ export function initUI() {
   let tooltipTimeout: ReturnType<typeof setTimeout>;
 
   const showTooltip = (target: HTMLElement) => {
+    const state = stateManager.getState();
     const token = target.getAttribute('data-token')!;
     const result = dictionaryEngine.getEntry(token);
     const entry = result.entry;
     
     if (entry) {
-      tooltip.innerHTML = `<div class="font-bold">${entry.pinyin}</div><div class="text-xs opacity-80">${entry.meaning}</div>`;
+      const isAttention = target.classList.contains('attention-target');
+      const pedagogicalHint = (state.pedagogicalDemo && isAttention) ? '<div class="mt-1 text-[10px] text-accent-primary font-bold animate-pulse">Start by clicking this word</div>' : '';
+      
+      tooltip.innerHTML = `
+        <div class="font-bold">${entry.pinyin}</div>
+        <div class="text-xs opacity-80">${entry.meaning}</div>
+        ${pedagogicalHint}
+      `;
       const rect = target.getBoundingClientRect();
       tooltip.style.left = `${rect.left}px`;
       tooltip.style.top = `${rect.top}px`;
@@ -427,7 +478,7 @@ LinguaPlay is powerful. (Latin Non-Lexical)
     
     const subs = parseSRT(demoSRT);
     resetContentState();
-    stateManager.setState({ subtitles: subs, videoLoaded: true });
+    stateManager.setState({ subtitles: subs, videoLoaded: true, pedagogicalDemo: true });
     updateLoadStatus("Diagnostic Demo Active", true);
   });
 
@@ -440,7 +491,7 @@ LinguaPlay is powerful. (Latin Non-Lexical)
       const url = URL.createObjectURL(file);
       video.src = url;
       video.load();
-      stateManager.setState({ videoLoaded: true });
+      stateManager.setState({ videoLoaded: true, pedagogicalDemo: false });
       updateLoadStatus(`Video: ${file.name}`);
     }
   });
@@ -455,7 +506,7 @@ LinguaPlay is powerful. (Latin Non-Lexical)
           const subs = parseSRT(text);
           if (subs.length === 0) throw new Error("Empty subtitle set");
           resetContentState();
-          stateManager.setState({ subtitles: subs });
+          stateManager.setState({ subtitles: subs, pedagogicalDemo: false });
           updateLoadStatus(`SRT: ${file.name}`);
         } catch (err) {
           updateLoadStatus(`Parse Failed: ${err instanceof Error ? err.message : 'Unknown error'}`);

@@ -20,6 +20,7 @@ export interface AppState {
   selectedToken: string | null;
   lexiconLoaded: boolean;
   savedWords: Set<string>;
+  pedagogicalDemo?: boolean;
 }
 
 export class Reducer {

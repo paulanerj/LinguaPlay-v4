@@ -131,7 +131,13 @@ class DictionaryEngine {
       return { entry: null, truthStatus: LexiconTruthStatus.NON_LEXICAL, reason: "Empty token" };
     }
 
-    // Latin / Punctuation check
+    // 1. Curated check (High priority override)
+    const curated = this.curatedEntries.get(token);
+    if (curated) {
+      return { entry: curated, truthStatus: LexiconTruthStatus.CURATED, reason: "Curated override" };
+    }
+
+    // 2. Latin / Punctuation check
     const isChinese = /[\u4e00-\u9fa5]/.test(token);
     const isLatin = /^[a-zA-Z0-9\s]+$/.test(token);
     const isPunctuation = /^[.,!?;:，。！？；：、""''（）《》【】]+$/.test(token);
@@ -140,13 +146,7 @@ class DictionaryEngine {
       return { entry: null, truthStatus: LexiconTruthStatus.NON_LEXICAL, reason: "Non-lexical token (Latin or Punctuation)" };
     }
 
-    // Curated check
-    const curated = this.curatedEntries.get(token);
-    if (curated) {
-      return { entry: curated, truthStatus: LexiconTruthStatus.CURATED, reason: "Curated override" };
-    }
-
-    // Dictionary check
+    // 3. Dictionary check
     const entry = this.dictionary.get(token);
     if (entry) {
       return { entry, truthStatus: LexiconTruthStatus.FOUND, reason: "Found in lexicon" };

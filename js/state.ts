@@ -19,7 +19,8 @@ class StateManager {
     activeSubtitleId: null,
     selectedToken: null,
     lexiconLoaded: false,
-    savedWords: new Set()
+    savedWords: new Set(),
+    pedagogicalDemo: true // Task 6
   };
 
   private listeners: Set<(state: AppState) => void> = new Set();

@@ -23,7 +23,7 @@ export function getHSKLevel(token: string): number | null {
  * 3. In Dictionary -> mid (shorter) or rare (longer)
  * 4. Not in Dictionary -> unknown
  */
-export function classifyToken(token: string, savedWords: Set<string>): HeatLevel {
+export function classifyToken(token: string, savedWords: Set<string>): HeatLevel | null {
   const level = BonusMaskSystem.classify(token, savedWords, dictionaryEngine);
   console.log(`[HEATMAP] token=${token} level=${level}`);
   return level;
@@ -31,11 +31,12 @@ export function classifyToken(token: string, savedWords: Set<string>): HeatLevel
 
 export function getHeatClass(token: string, savedWords: Set<string>): string {
   const level = classifyToken(token, savedWords);
-  return `heat-${level}`;
+  return level ? `heat-${level}` : '';
 }
 
 export function getHeatLabel(token: string, savedWords: Set<string>): string {
   const level = classifyToken(token, savedWords);
+  if (!level) return 'None';
   switch (level) {
     case 'known': return 'Known';
     case 'common': return 'Common';

@@ -61,6 +61,14 @@ class AttentionEngine {
 
     return target;
   }
+
+  getReviewedInCycle(): Set<string> {
+    return this.reviewedTokens;
+  }
+
+  getReviewedInSession(): Set<string> {
+    return this.sessionReviewedTokens;
+  }
 }
 
 export const attentionEngine = new AttentionEngine();

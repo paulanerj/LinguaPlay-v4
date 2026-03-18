@@ -143,26 +143,17 @@ video {
   background: rgba(255,255,255,0.1);
 }
 
+/* Token State Stack Visualizer (Task 4) */
 .token {
   display: inline-block;
   padding: 0 2px;
   border-radius: 3px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
-.token:hover {
-  background: var(--token-hover);
-  color: white;
-}
-
-.token.saved {
-  border-bottom: 2px dashed var(--accent-primary);
-  color: var(--accent-primary);
-  z-index: 5;
-}
-
-/* Heatmap Engine Styles */
+/* Heatmap -> text color */
 .token.heat-known { color: #4ade80; } /* green-400 */
 .token.heat-common { color: #60a5fa; } /* blue-400 */
 .token.heat-mid { color: #facc15; } /* yellow-400 */
@@ -173,34 +164,70 @@ video {
   text-decoration: dotted underline;
 }
 
-/* Maintain visibility on hover/active */
-.token:hover {
+/* Saved -> underline */
+.token.saved {
+  border-bottom: 2px solid var(--accent-primary);
+  text-underline-offset: 3px;
+}
+
+/* Attention -> medium */
+.token.attention-target {
+  animation: attention-pulse 2s infinite;
+  box-shadow: 0 0 10px var(--accent-primary);
+  z-index: 5;
+  outline: 1px solid rgba(255,255,255,0.5);
+}
+
+/* Selection -> strongest */
+.token.active {
+  background-color: var(--accent-primary) !important;
+  color: #000 !important;
+  box-shadow: 0 0 20px var(--accent-primary);
+  z-index: 10;
+  font-weight: 700;
+  transform: scale(1.1);
+}
+
+/* Non-Lexical Clarity (Task 8) */
+.token.truth-non-lexical {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+  filter: grayscale(1);
+}
+
+/* Developer Mode Stack Visualizer */
+.token.dev-stack::after {
+  content: attr(data-stack);
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.9);
+  color: #00ff00;
+  font-size: 7px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  border: 1px solid #00ff00;
+}
+
+/* Attention Pulse Animation */
+@keyframes attention-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0px var(--accent-primary); }
+  50% { transform: scale(1.05); box-shadow: 0 0 15px var(--accent-primary); }
+  100% { transform: scale(1); box-shadow: 0 0 0px var(--accent-primary); }
+}
+
+.token.pedagogical-pulse {
+  animation-duration: 4s; /* Slower pulse for pedagogical demo */
+}
+
+.token:hover:not(.truth-non-lexical) {
   background: var(--token-hover);
   color: white !important;
-}
-
-.token.active {
-  background: rgba(56, 189, 248, 0.3);
-  box-shadow: 0 0 0 2px var(--accent-primary), 0 0 10px rgba(56, 189, 248, 0.5);
-  color: white !important;
-  font-weight: 700;
-  z-index: 50;
-  position: relative;
-}
-
-.token.attention-target {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
-  animation: target-pulse 2s infinite;
-  z-index: 20;
-  position: relative;
-}
-
-@keyframes target-pulse {
-  0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.2); }
-  50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
-  100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.2); }
 }
 
 /* Quick Preview Tooltip */
