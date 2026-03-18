@@ -115,27 +115,57 @@ export function initUI() {
       return;
     }
 
-    const entry = dictionaryEngine.getEntry(token);
+    const result = dictionaryEngine.getEntry(token);
+    const entry = result.entry;
     const isSaved = state.savedWords.has(token);
     const heatLabel = getHeatLabel(token, state.savedWords);
-    const isChinese = /[\u4e00-\u9fa5]/.test(token);
     
     // Find examples (limit to 5 for performance)
     const examples = state.subtitles.filter(s => s.text.includes(token)).slice(0, 5);
-    const examplesHtml = examples.map(s => renderSubtitleRow(s, state.savedWords, 'example-row')).join('');
+    const examplesHtml = examples.length > 0 
+      ? examples.map(s => renderSubtitleRow(s, state.savedWords, 'example-row')).join('')
+      : '<div class="text-xs opacity-40 italic p-4 text-center border border-dashed border-slate-700 rounded">No examples available in current corpus</div>';
+
+    let statusMessage = '';
+    let statusColor = 'text-white/60';
+
+    switch (result.truthStatus) {
+      case 'FOUND':
+        statusMessage = `HSK ${entry?.hsk || 'N/A'} Lexicon Entry`;
+        statusColor = 'text-green-400';
+        break;
+      case 'CURATED':
+        statusMessage = 'Curated Learning Token';
+        statusColor = 'text-blue-400';
+        break;
+      case 'MISSING':
+        statusMessage = 'Word not yet in learning dictionary';
+        statusColor = 'text-orange-400';
+        break;
+      case 'NON_LEXICAL':
+        statusMessage = 'Not a Chinese lexical token';
+        statusColor = 'text-slate-500';
+        break;
+      case 'PENDING':
+        statusMessage = 'Dictionary loading...';
+        statusColor = 'text-yellow-400';
+        break;
+    }
 
     focusPanel.innerHTML = `
       ${isSuggested ? '<div class="text-[10px] uppercase tracking-widest text-accent-primary mb-1 font-bold opacity-80 animate-pulse">Suggested Focus</div>' : ''}
-      <div class="flex justify-between items-start mb-4">
+      <div class="flex justify-between items-start mb-2">
         <h2 class="text-3xl font-bold text-accent-primary">${token}</h2>
         <button id="btn-save-word" class="save-btn ${isSaved ? 'saved' : ''}">
           ${isSaved ? '★ Saved' : '☆ Save'}
         </button>
       </div>
+      <div class="text-[10px] uppercase tracking-widest ${statusColor} mb-4 font-bold">${statusMessage}</div>
+      
       <div class="mb-6">
-        <p class="text-xl italic opacity-80">${entry?.pinyin || (isChinese ? 'pinyin unknown' : 'non-lexical')}</p>
-        <p class="text-lg mt-2">${entry?.meaning || (isChinese ? 'This token is not in the current lexicon. Try searching for it online.' : 'This appears to be a proper noun or punctuation.')}</p>
-        ${!entry ? `<a href="https://www.mdbg.net/chinese/dictionary?page=worddict&wdrst=0&wdqb=${token}" target="_blank" class="text-xs text-accent-primary underline mt-2 inline-block">Search on MDBG</a>` : ''}
+        <p class="text-xl italic opacity-80">${entry?.pinyin || (result.truthStatus === 'MISSING' ? 'pinyin unknown' : '')}</p>
+        <p class="text-lg mt-2">${entry?.meaning || (result.truthStatus === 'MISSING' ? 'This token is not in the current lexicon. Try searching for it online.' : '')}</p>
+        ${result.truthStatus === 'MISSING' ? `<a href="https://www.mdbg.net/chinese/dictionary?page=worddict&wdrst=0&wdqb=${token}" target="_blank" class="text-xs text-accent-primary underline mt-2 inline-block">Search on MDBG</a>` : ''}
       </div>
       
       <div class="grid grid-cols-2 gap-2 text-sm mb-4">
@@ -319,7 +349,8 @@ export function initUI() {
 
   const showTooltip = (target: HTMLElement) => {
     const token = target.getAttribute('data-token')!;
-    const entry = dictionaryEngine.getEntry(token);
+    const result = dictionaryEngine.getEntry(token);
+    const entry = result.entry;
     
     if (entry) {
       tooltip.innerHTML = `<div class="font-bold">${entry.pinyin}</div><div class="text-xs opacity-80">${entry.meaning}</div>`;
@@ -362,35 +393,31 @@ export function initUI() {
     const demoSRT = `
 1
 00:00:01,000 --> 00:00:04,000
-你好，我们一起学习中文。
+你好，我们一起学习中文。(HSK1 Found)
 
 2
 00:00:05,000 --> 00:00:08,000
-这个认知系统帮助学习者。
+这是一个极其复杂的系统架构测试。(HSK4+ Rare)
 
 3
 00:00:09,000 --> 00:00:12,000
-学习者学习再学习！
+来到这个系统的用户。(Common Found)
 
 4
 00:00:13,000 --> 00:00:16,000
-来到这个系统的用户。
+LinguaPlay is powerful. (Latin Non-Lexical)
 
 5
 00:00:17,000 --> 00:00:20,000
-LinguaPlay is powerful.
+帮助帮助帮助帮助。(Curated/Common)
 
 6
 00:00:21,000 --> 00:00:24,000
-这是一个极其复杂的系统架构测试。
+这是一个极其罕见的词汇：饕餮。(Missing/Rare)
 
 7
 00:00:25,000 --> 00:00:28,000
-帮助帮助帮助帮助。
-
-8
-00:00:29,000 --> 00:00:32,000
-再学习，再理解，再进步。
+标点符号测试：，。！？；：(Punctuation Non-Lexical)
     `;
     if (video.src.startsWith('blob:')) {
       URL.revokeObjectURL(video.src);

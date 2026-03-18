@@ -18,6 +18,20 @@ export interface DictEntry {
   frequencyBand?: 'common' | 'mid' | 'rare';
 }
 
+export enum LexiconTruthStatus {
+  FOUND = 'FOUND',
+  CURATED = 'CURATED',
+  MISSING = 'MISSING',
+  NON_LEXICAL = 'NON_LEXICAL',
+  PENDING = 'PENDING'
+}
+
+export interface LexiconResult {
+  entry: DictEntry | null;
+  truthStatus: LexiconTruthStatus;
+  reason: string;
+}
+
 class DictionaryEngine {
   private dictionary: Map<string, DictEntry> = new Map();
   private curatedEntries: Map<string, DictEntry> = new Map();
@@ -108,20 +122,51 @@ class DictionaryEngine {
     });
   }
 
-  getEntry(token: string): DictEntry | null {
-    if (!token) return null;
+  getEntry(token: string): LexiconResult {
+    if (!stateManager.getState().lexiconLoaded && this.dictionary.size === 0) {
+      return { entry: null, truthStatus: LexiconTruthStatus.PENDING, reason: "Dictionary loading..." };
+    }
+
+    if (!token || token.trim() === "") {
+      return { entry: null, truthStatus: LexiconTruthStatus.NON_LEXICAL, reason: "Empty token" };
+    }
+
+    // Latin / Punctuation check
+    const isChinese = /[\u4e00-\u9fa5]/.test(token);
+    const isLatin = /^[a-zA-Z0-9\s]+$/.test(token);
+    const isPunctuation = /^[.,!?;:，。！？；：、""''（）《》【】]+$/.test(token);
+
+    if (!isChinese && (isLatin || isPunctuation)) {
+      return { entry: null, truthStatus: LexiconTruthStatus.NON_LEXICAL, reason: "Non-lexical token (Latin or Punctuation)" };
+    }
+
+    // Curated check
+    const curated = this.curatedEntries.get(token);
+    if (curated) {
+      return { entry: curated, truthStatus: LexiconTruthStatus.CURATED, reason: "Curated override" };
+    }
+
+    // Dictionary check
     const entry = this.dictionary.get(token);
-    if (entry) return entry;
+    if (entry) {
+      return { entry, truthStatus: LexiconTruthStatus.FOUND, reason: "Found in lexicon" };
+    }
 
     // Fallback: Case-insensitive lookup for Latin characters
-    if (/^[a-zA-Z]+$/.test(token)) {
+    if (isLatin) {
       const lower = token.toLowerCase();
       for (const [key, val] of this.dictionary.entries()) {
-        if (key.toLowerCase() === lower) return val;
+        if (key.toLowerCase() === lower) {
+          return { entry: val, truthStatus: LexiconTruthStatus.FOUND, reason: "Found in lexicon (case-insensitive)" };
+        }
       }
     }
 
-    return null;
+    if (isChinese) {
+      return { entry: null, truthStatus: LexiconTruthStatus.MISSING, reason: "Chinese token missing from lexicon" };
+    }
+
+    return { entry: null, truthStatus: LexiconTruthStatus.NON_LEXICAL, reason: "Non-lexical token" };
   }
 }
 

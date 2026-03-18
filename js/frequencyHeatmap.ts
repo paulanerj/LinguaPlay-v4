@@ -12,8 +12,8 @@ import { dictionaryEngine } from './dictionaryEngine.ts';
 export type { HeatLevel };
 
 export function getHSKLevel(token: string): number | null {
-  const entry = dictionaryEngine.getEntry(token);
-  return entry?.hsk || null;
+  const result = dictionaryEngine.getEntry(token);
+  return result.entry?.hsk || null;
 }
 
 /**

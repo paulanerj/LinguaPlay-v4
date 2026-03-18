@@ -167,7 +167,11 @@ video {
 .token.heat-common { color: #60a5fa; } /* blue-400 */
 .token.heat-mid { color: #facc15; } /* yellow-400 */
 .token.heat-rare { color: #f97316; } /* orange-500 */
-.token.heat-unknown { color: #ef4444; } /* red-500 */
+.token.heat-unknown { 
+  color: #ef4444; /* red-500 */
+  opacity: 0.85;
+  text-decoration: dotted underline;
+}
 
 /* Maintain visibility on hover/active */
 .token:hover {

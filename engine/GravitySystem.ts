@@ -6,6 +6,7 @@
 
 import { BonusMaskSystem, DictionaryLookup } from './BonusMaskSystem.ts';
 import { ChainEngine } from './ChainEngine.ts';
+import { LexiconTruthStatus } from '../js/dictionaryEngine.ts';
 
 export class GravitySystem {
   /**
@@ -20,10 +21,12 @@ export class GravitySystem {
     reviewedInSession: Set<string>,
     dictionary: DictionaryLookup
   ): string | null {
-    // Filter for meaningful tokens (Chinese characters or in dictionary)
-    const meaningfulTokens = tokens.filter(t => 
-      /[\u4e00-\u9fa5]/.test(t) || dictionary.getEntry(t) !== null
-    );
+    // Filter for meaningful tokens (Chinese characters or in dictionary, excluding NON_LEXICAL)
+    const meaningfulTokens = tokens.filter(t => {
+      const result = dictionary.getEntry(t);
+      return result.truthStatus !== LexiconTruthStatus.NON_LEXICAL && 
+             result.truthStatus !== LexiconTruthStatus.PENDING;
+    });
 
     const priority = ChainEngine.getPriorityChain();
 

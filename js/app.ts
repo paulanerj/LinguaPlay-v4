@@ -21,35 +21,31 @@ async function bootstrap() {
   const sampleSRT = `
 1
 00:00:01,000 --> 00:00:04,000
-你好，我们一起学习中文。
+你好，我们一起学习中文。(HSK1 Found)
 
 2
 00:00:05,000 --> 00:00:08,000
-这个认知系统帮助学习者。
+这是一个极其复杂的系统架构测试。(HSK4+ Rare)
 
 3
 00:00:09,000 --> 00:00:12,000
-学习者学习再学习！
+来到这个系统的用户。(Common Found)
 
 4
 00:00:13,000 --> 00:00:16,000
-来到这个系统的用户。
+LinguaPlay is powerful. (Latin Non-Lexical)
 
 5
 00:00:17,000 --> 00:00:20,000
-LinguaPlay is powerful.
+帮助帮助帮助帮助。(Curated/Common)
 
 6
 00:00:21,000 --> 00:00:24,000
-这是一个极其复杂的系统架构测试。
+这是一个极其罕见的词汇：饕餮。(Missing/Rare)
 
 7
 00:00:25,000 --> 00:00:28,000
-帮助帮助帮助帮助。
-
-8
-00:00:29,000 --> 00:00:32,000
-再学习，再理解，再进步。
+标点符号测试：，。！？；：(Punctuation Non-Lexical)
   `;
   const subs = parseSRT(sampleSRT);
   stateManager.setState({ subtitles: subs });
