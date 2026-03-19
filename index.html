@@ -17,7 +17,23 @@
         </div>
         
         <div id="controls-bar">
-          <div class="text-sm opacity-50">LinguaPlay Core v0.4.0</div>
+          <div class="flex items-center gap-4">
+            <div class="text-sm opacity-50">LinguaPlay Core v0.4.0</div>
+            
+            <div class="flex gap-2">
+              <button id="btn-load-video" class="ui-btn">Load Video</button>
+              <button id="btn-load-srt" class="ui-btn">Load SRT</button>
+              <button id="btn-demo" class="ui-btn opacity-50">Demo</button>
+            </div>
+
+            <input type="file" id="input-video" accept="video/*" class="hidden">
+            <input type="file" id="input-srt" accept=".srt" class="hidden">
+          </div>
+
+          <div id="status-line" class="text-[10px] uppercase tracking-widest opacity-40 flex-1 text-right">
+            demo mode active
+          </div>
+          
           <div id="status-lexicon" class="text-xs text-accent">Lexicon: Loading...</div>
         </div>
 

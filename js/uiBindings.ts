@@ -9,6 +9,7 @@ import { renderSubtitleRow } from './subtitleRenderer.ts';
 import { syncSubtitles } from './subtitleSync.ts';
 import { getHeatLabel } from './frequencyHeatmap.ts';
 import { attentionEngine } from './attentionEngine.ts';
+import { parseSRT } from './subtitleParser.ts';
 
 export function initUI() {
   const video = document.querySelector('video') as HTMLVideoElement;
@@ -16,12 +17,133 @@ export function initUI() {
   const transcriptPanel = document.getElementById('transcript-panel')!;
   const focusPanel = document.getElementById('focus-panel')!;
   const tooltip = document.getElementById('quick-preview-tooltip')!;
+  const statusLine = document.getElementById('status-line')!;
+
+  const btnLoadVideo = document.getElementById('btn-load-video')!;
+  const btnLoadSRT = document.getElementById('btn-load-srt')!;
+  const btnDemo = document.getElementById('btn-demo')!;
+  const inputVideo = document.getElementById('input-video') as HTMLInputElement;
+  const inputSRT = document.getElementById('input-srt') as HTMLInputElement;
 
   let transcriptRendered = false;
   let lastActiveId: number | null = null;
   let lastSelectedToken: string | null = null;
   let lastSavedWordsRef: Set<string> | null = null;
   let lastAttentionTarget: string | null = null;
+
+  let videoFile: File | null = null;
+  let srtFile: File | null = null;
+  let currentVideoUrl: string | null = null;
+
+  function updateStatus() {
+    if (!videoFile && !srtFile && !transcriptRendered) {
+      statusLine.textContent = 'waiting for content';
+      return;
+    }
+    
+    const parts = [];
+    if (videoFile) parts.push(`Video: ${videoFile.name}`);
+    if (srtFile) parts.push(`SRT: ${srtFile.name}`);
+    
+    if (parts.length === 0) {
+      statusLine.textContent = 'demo mode active';
+    } else {
+      statusLine.textContent = parts.join(' | ');
+    }
+  }
+
+  function resetContentState() {
+    // 1. Clear State Manager
+    stateManager.setState({
+      selectedToken: null,
+      activeSubtitleId: null,
+      currentTime: 0
+    });
+
+    // 2. Clear Attention Engine
+    attentionEngine.resetAttentionCycle();
+
+    // 3. Clear UI State
+    transcriptRendered = false;
+    transcriptPanel.innerHTML = '';
+    subDisplay.innerHTML = '';
+    subDisplay.classList.add('hidden');
+    
+    // 4. Clear Local Tracking
+    lastActiveId = null;
+    lastSelectedToken = null;
+    lastAttentionTarget = null;
+  }
+
+  // File Loading Bindings
+  btnLoadVideo.addEventListener('click', () => inputVideo.click());
+  btnLoadSRT.addEventListener('click', () => inputSRT.click());
+
+  inputVideo.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) {
+      // Revoke previous URL if it exists
+      if (currentVideoUrl) {
+        URL.revokeObjectURL(currentVideoUrl);
+      }
+
+      videoFile = file;
+      currentVideoUrl = URL.createObjectURL(file);
+      video.src = currentVideoUrl;
+      
+      resetContentState();
+      updateStatus();
+    }
+  });
+
+  inputSRT.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const text = event.target?.result as string;
+          const subs = parseSRT(text);
+          if (subs.length === 0) throw new Error("No subtitles found");
+          
+          srtFile = file;
+          resetContentState();
+          stateManager.setState({ subtitles: subs });
+          updateStatus();
+        } catch (err) {
+          console.error("SRT Parse Failed:", err);
+          statusLine.textContent = 'parse failed';
+        }
+      };
+      reader.readAsText(file);
+    }
+  });
+
+  btnDemo.addEventListener('click', () => {
+    // Revoke previous URL if it exists
+    if (currentVideoUrl) {
+      URL.revokeObjectURL(currentVideoUrl);
+      currentVideoUrl = null;
+    }
+
+    videoFile = null;
+    srtFile = null;
+    video.src = "https://www.w3schools.com/html/mov_bbb.mp4";
+    
+    const sampleSRT = `
+1
+00:00:01,000 --> 00:00:04,000
+你好，欢迎来到LinguaPlay。
+
+2
+00:00:05,000 --> 00:00:08,000
+我们一起学习中文。
+    `;
+    const subs = parseSRT(sampleSRT);
+    resetContentState();
+    stateManager.setState({ subtitles: subs });
+    updateStatus();
+  });
 
   function updateAttentionTarget() {
     const state = stateManager.getState();
@@ -69,6 +191,7 @@ export function initUI() {
     if (!transcriptRendered && state.subtitles.length > 0) {
       transcriptPanel.innerHTML = state.subtitles.map(s => renderSubtitleRow(s, state.savedWords, 'transcript-row')).join('');
       transcriptRendered = true;
+      updateStatus();
     }
 
     // 2. Handle Active Subtitle Change (Multi-line Overlay + Transcript Scroll)

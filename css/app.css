@@ -200,6 +200,28 @@ video {
   margin-top: -8px;
 }
 
+/* UI Buttons */
+.ui-btn {
+  background: #334155;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.ui-btn:hover {
+  background: #475569;
+}
+
+.ui-btn:active {
+  transform: translateY(1px);
+}
+
 /* Save Button */
 .save-btn {
   padding: 0.25rem 0.75rem;
