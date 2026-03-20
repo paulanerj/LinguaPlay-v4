@@ -7,12 +7,20 @@
  *   - Deterministic per subtitle row.
  */
 
-import { GravitySystem } from '../engine/GravitySystem.ts';
 import { dictionaryEngine } from './dictionaryEngine.ts';
+import { classifyToken, HeatLevel } from './frequencyHeatmap.ts';
 
 class AttentionEngine {
   private reviewedTokens: Set<string> = new Set();
   private sessionReviewedTokens: Set<string> = new Set();
+
+  /**
+   * The canonical priority sequence for learning targets.
+   * Unknown -> Rare -> Mid -> Common.
+   */
+  private static getPriorityChain(): HeatLevel[] {
+    return ['unknown', 'rare', 'mid', 'common'];
+  }
 
   /**
    * Resets the attention cycle for the current subtitle row.
@@ -31,7 +39,6 @@ class AttentionEngine {
 
   /**
    * Marks a token as reviewed so it won't be targeted again in the current cycle.
-   * Also tracks it for the session to lower its priority later (future task).
    */
   markTokenReviewed(token: string) {
     console.log(`[ATTENTION] reviewed=${token}`);
@@ -41,25 +48,112 @@ class AttentionEngine {
 
   /**
    * Determines the next target token from a list of tokens.
-   * Priority: Unknown > Rare > Mid > Common.
-   * Excludes Known tokens, punctuation, and already reviewed tokens.
    */
   getNextTargetToken(tokens: string[], savedWords: Set<string>): string | null {
-    const target = GravitySystem.selectTarget(
-      tokens,
-      savedWords,
-      this.reviewedTokens,
-      this.sessionReviewedTokens,
-      dictionaryEngine
-    );
+    // Filter for meaningful tokens (excluding NON_LEXICAL)
+    const meaningfulTokens = tokens.filter(t => {
+      const result = dictionaryEngine.getEntry(t);
+      return result.truthStatus !== 'NON_LEXICAL';
+    });
 
-    if (target) {
-      console.log(`[ATTENTION] target=${target}`);
-    } else {
-      console.log(`[ATTENTION] target=null (no valid targets remaining)`);
+    const priority = AttentionEngine.getPriorityChain();
+
+    // Primary Pass: Respect session history
+    for (const level of priority) {
+      for (const token of meaningfulTokens) {
+        if (this.reviewedTokens.has(token)) continue;
+        
+        const tokenLevel = classifyToken(token, savedWords);
+        
+        // Lower priority for tokens already seen in this session (if they are not unknown)
+        if (tokenLevel !== 'unknown' && this.sessionReviewedTokens.has(token)) continue;
+
+        if (tokenLevel === level) {
+          console.log(`[ATTENTION] target=${token} (level=${level})`);
+          return token;
+        }
+      }
     }
 
-    return target;
+    // Fallback Pass: Allow session-reviewed tokens if no new targets exist
+    for (const level of priority) {
+      for (const token of meaningfulTokens) {
+        if (this.reviewedTokens.has(token)) continue;
+        const tokenLevel = classifyToken(token, savedWords);
+        if (tokenLevel === level) {
+          console.log(`[ATTENTION] target=${token} (level=${level}, fallback)`);
+          return token;
+        }
+      }
+    }
+
+    console.log(`[ATTENTION] target=null (no valid targets remaining)`);
+    return null;
+  }
+
+  /**
+   * Returns a detailed trace of the decision process for the next target.
+   * Used by Debug Overlay.
+   */
+  getDecisionTrace(tokens: string[], savedWords: Set<string>): any {
+    const meaningfulTokens = tokens.filter(t => {
+      const result = dictionaryEngine.getEntry(t);
+      return result.truthStatus !== 'NON_LEXICAL';
+    });
+
+    const priority = AttentionEngine.getPriorityChain();
+    const skippedTokens: string[] = [];
+    const evaluatedLevels: string[] = [];
+
+    // Primary Pass
+    for (const level of priority) {
+      evaluatedLevels.push(level);
+      for (const token of meaningfulTokens) {
+        if (this.reviewedTokens.has(token)) {
+          if (!skippedTokens.includes(token)) skippedTokens.push(token);
+          continue;
+        }
+        
+        const tokenLevel = classifyToken(token, savedWords);
+        
+        if (tokenLevel !== 'unknown' && this.sessionReviewedTokens.has(token)) {
+          if (!skippedTokens.includes(token)) skippedTokens.push(token);
+          continue;
+        }
+
+        if (tokenLevel === level) {
+          return {
+            evaluatedLevels,
+            skippedTokens,
+            chosenToken: token,
+            reason: level
+          };
+        }
+      }
+    }
+
+    // Fallback Pass
+    for (const level of priority) {
+      for (const token of meaningfulTokens) {
+        if (this.reviewedTokens.has(token)) continue;
+        const tokenLevel = classifyToken(token, savedWords);
+        if (tokenLevel === level) {
+          return {
+            evaluatedLevels,
+            skippedTokens,
+            chosenToken: token,
+            reason: level + " (fallback)"
+          };
+        }
+      }
+    }
+
+    return {
+      evaluatedLevels,
+      skippedTokens,
+      chosenToken: null,
+      reason: null
+    };
   }
 
   getReviewedInCycle(): Set<string> {

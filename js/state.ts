@@ -7,9 +7,24 @@
  *   - Outputs: Notifies listeners of changes.
  */
 
-import { Reducer, AppState, Subtitle } from '../engine/Reducer.ts';
+export interface Subtitle {
+  id: number;
+  start: number;
+  end: number;
+  text: string;
+  tokens?: string[];
+}
 
-export type { AppState, Subtitle };
+export interface AppState {
+  videoLoaded: boolean;
+  currentTime: number;
+  subtitles: Subtitle[];
+  activeSubtitleId: number | null;
+  selectedToken: string | null;
+  lexiconLoaded: boolean;
+  savedWords: Set<string>;
+  pedagogicalDemo?: boolean;
+}
 
 class StateManager {
   private state: AppState = {
@@ -20,17 +35,29 @@ class StateManager {
     selectedToken: null,
     lexiconLoaded: false,
     savedWords: new Set(),
-    pedagogicalDemo: true // Task 6
+    pedagogicalDemo: true
   };
 
   private listeners: Set<(state: AppState) => void> = new Set();
 
   /**
-   * SAFE TO CHANGE: Adding new state properties.
-   * RISKY TO CHANGE: Modifying the notification loop.
+   * Performs a pure state update.
    */
+  private static reduce(currentState: AppState, update: Partial<AppState>): AppState {
+    const nextState = { ...currentState, ...update };
+    
+    if (update.subtitles) {
+      nextState.subtitles = [...update.subtitles];
+    }
+    if (update.savedWords) {
+      nextState.savedWords = new Set(update.savedWords);
+    }
+    
+    return nextState;
+  }
+
   setState(update: Partial<AppState>) {
-    this.state = Reducer.reduce(this.state, update);
+    this.state = StateManager.reduce(this.state, update);
     this.notify();
   }
 

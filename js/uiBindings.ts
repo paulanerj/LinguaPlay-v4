@@ -4,7 +4,7 @@
  */
 
 import { stateManager } from './state.ts';
-import { dictionaryEngine } from './dictionaryEngine.ts';
+import { dictionaryEngine, LexiconLookupResult, LexiconTruthStatus } from './dictionaryEngine.ts';
 import { renderSubtitleRow } from './subtitleRenderer.ts';
 import { syncSubtitles } from './subtitleSync.ts';
 import { getHeatLabel } from './frequencyHeatmap.ts';
@@ -241,7 +241,10 @@ export function initUI() {
       lastSavedWordsRef = state.savedWords;
 
       if (state.selectedToken) {
-        const entry = dictionaryEngine.getEntry(state.selectedToken);
+        const lookup = dictionaryEngine.getEntry(state.selectedToken);
+        const entry = lookup.entry;
+        const status = lookup.truthStatus;
+        
         const isSaved = state.savedWords.has(state.selectedToken);
         const heatLabel = getHeatLabel(state.selectedToken, state.savedWords);
         const isSuggested = state.selectedToken === lastAttentionTarget;
@@ -259,8 +262,18 @@ export function initUI() {
             </button>
           </div>
           <div class="mb-6">
-            <p class="text-xl italic opacity-80">${entry?.pinyin || 'pinyin'}</p>
-            <p class="text-lg mt-2">${entry?.meaning || 'Meaning not found in current lexicon.'}</p>
+            <div class="text-[10px] uppercase tracking-widest opacity-50 mb-1 font-bold">
+              ${status === 'CURATED' ? 'Curated Learning Token' : 
+                status === 'FOUND' ? 'Dictionary Entry' : 
+                status === 'MISSING' ? 'Word not yet in learning dictionary' : 
+                'Not a Chinese lexical token'}
+            </div>
+            ${entry ? `
+              <p class="text-xl italic opacity-80">${entry.pinyin}</p>
+              <p class="text-lg mt-2">${entry.meaning}</p>
+            ` : `
+              <p class="text-sm opacity-60 italic">${lookup.reason}</p>
+            `}
           </div>
           
           <div class="grid grid-cols-2 gap-2 text-sm mb-4">
@@ -291,7 +304,7 @@ export function initUI() {
           <div>
             <h3 class="text-lg font-semibold mb-3 border-b border-slate-700 pb-1">Example Sandbox</h3>
             <div class="flex flex-col gap-2">
-              ${examplesHtml}
+              ${examples.length > 0 ? examplesHtml : '<div class="text-sm opacity-40 italic p-4 border border-dashed border-slate-700 rounded text-center">No examples available in current subtitle corpus.</div>'}
             </div>
           </div>
         `;
@@ -365,10 +378,17 @@ export function initUI() {
 
   const showTooltip = (target: HTMLElement) => {
     const token = target.getAttribute('data-token')!;
-    const entry = dictionaryEngine.getEntry(token);
+    const lookup = dictionaryEngine.getEntry(token);
+    const entry = lookup.entry;
     
     if (entry) {
       tooltip.innerHTML = `<div class="font-bold">${entry.pinyin}</div><div class="text-xs opacity-80">${entry.meaning}</div>`;
+      const rect = target.getBoundingClientRect();
+      tooltip.style.left = `${rect.left}px`;
+      tooltip.style.top = `${rect.top}px`;
+      tooltip.classList.remove('hidden');
+    } else if (lookup.truthStatus === 'MISSING') {
+      tooltip.innerHTML = `<div class="text-[10px] opacity-60 italic">${lookup.reason}</div>`;
       const rect = target.getBoundingClientRect();
       tooltip.style.left = `${rect.left}px`;
       tooltip.style.top = `${rect.top}px`;

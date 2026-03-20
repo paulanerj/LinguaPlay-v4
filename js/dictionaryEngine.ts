@@ -18,15 +18,9 @@ export interface DictEntry {
   frequencyBand?: 'common' | 'mid' | 'rare';
 }
 
-export enum LexiconTruthStatus {
-  FOUND = 'FOUND',
-  CURATED = 'CURATED',
-  MISSING = 'MISSING',
-  NON_LEXICAL = 'NON_LEXICAL',
-  PENDING = 'PENDING'
-}
+export type LexiconTruthStatus = 'CURATED' | 'FOUND' | 'MISSING' | 'NON_LEXICAL';
 
-export interface LexiconResult {
+export interface LexiconLookupResult {
   entry: DictEntry | null;
   truthStatus: LexiconTruthStatus;
   reason: string;
@@ -61,7 +55,7 @@ class DictionaryEngine {
    * CONTRACT: Never overwrites curated entries.
    */
   async loadLargeLexicon(url: string) {
-    // TASK 1: Ensure curated entries populate dictionary BEFORE any external load
+    // Ensure curated entries populate dictionary BEFORE any external load
     this.curatedEntries.forEach((val, key) => {
       this.dictionary.set(key, val);
     });
@@ -75,7 +69,7 @@ class DictionaryEngine {
       let accepted = 0;
       let rejected = 0;
 
-      // TASK 2: Strict validation of lexicon JSON structure
+      // Strict validation of lexicon JSON structure
       if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
         for (const [word, info] of Object.entries(data)) {
           if (this.curatedEntries.has(word)) continue;
@@ -122,51 +116,63 @@ class DictionaryEngine {
     });
   }
 
-  getEntry(token: string): LexiconResult {
-    if (!stateManager.getState().lexiconLoaded && this.dictionary.size === 0) {
-      return { entry: null, truthStatus: LexiconTruthStatus.PENDING, reason: "Dictionary loading..." };
-    }
-
+  /**
+   * UPGRADED LOOKUP LOGIC
+   * Distinguishes between curated, found, missing, and non-lexical tokens.
+   */
+  getEntry(token: string): LexiconLookupResult {
     if (!token || token.trim() === "") {
-      return { entry: null, truthStatus: LexiconTruthStatus.NON_LEXICAL, reason: "Empty token" };
+      return { entry: null, truthStatus: 'NON_LEXICAL', reason: "Empty token" };
     }
 
-    // 1. Curated check (High priority override)
+    // 1. CURATED check (High priority)
     const curated = this.curatedEntries.get(token);
     if (curated) {
-      return { entry: curated, truthStatus: LexiconTruthStatus.CURATED, reason: "Curated override" };
+      return { 
+        entry: curated, 
+        truthStatus: 'CURATED', 
+        reason: "From curated learning vocabulary" 
+      };
     }
 
-    // 2. Latin / Punctuation check
+    // 2. NON_LEXICAL check (Punctuation / Latin / Non-Chinese)
     const isChinese = /[\u4e00-\u9fa5]/.test(token);
     const isLatin = /^[a-zA-Z0-9\s]+$/.test(token);
     const isPunctuation = /^[.,!?;:，。！？；：、""''（）《》【】]+$/.test(token);
 
     if (!isChinese && (isLatin || isPunctuation)) {
-      return { entry: null, truthStatus: LexiconTruthStatus.NON_LEXICAL, reason: "Non-lexical token (Latin or Punctuation)" };
+      return { 
+        entry: null, 
+        truthStatus: 'NON_LEXICAL', 
+        reason: "Not a Chinese lexical token (Latin or Punctuation)" 
+      };
     }
 
-    // 3. Dictionary check
+    // 3. FOUND check (Dictionary)
     const entry = this.dictionary.get(token);
     if (entry) {
-      return { entry, truthStatus: LexiconTruthStatus.FOUND, reason: "Found in lexicon" };
+      return { 
+        entry, 
+        truthStatus: 'FOUND', 
+        reason: "From loaded lexicon" 
+      };
     }
 
-    // Fallback: Case-insensitive lookup for Latin characters
-    if (isLatin) {
-      const lower = token.toLowerCase();
-      for (const [key, val] of this.dictionary.entries()) {
-        if (key.toLowerCase() === lower) {
-          return { entry: val, truthStatus: LexiconTruthStatus.FOUND, reason: "Found in lexicon (case-insensitive)" };
-        }
-      }
-    }
-
+    // 4. MISSING check (Chinese token not in dictionary)
     if (isChinese) {
-      return { entry: null, truthStatus: LexiconTruthStatus.MISSING, reason: "Chinese token missing from lexicon" };
+      return { 
+        entry: null, 
+        truthStatus: 'MISSING', 
+        reason: "Chinese token missing from lexicon" 
+      };
     }
 
-    return { entry: null, truthStatus: LexiconTruthStatus.NON_LEXICAL, reason: "Non-lexical token" };
+    // Default to NON_LEXICAL for everything else
+    return { 
+      entry: null, 
+      truthStatus: 'NON_LEXICAL', 
+      reason: "Not a Chinese lexical token" 
+    };
   }
 }
 

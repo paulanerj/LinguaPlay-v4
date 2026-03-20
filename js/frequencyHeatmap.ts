@@ -6,10 +6,9 @@
  *   - Does not influence segmentation or behavior.
  */
 
-import { BonusMaskSystem, HeatLevel } from '../engine/BonusMaskSystem.ts';
 import { dictionaryEngine } from './dictionaryEngine.ts';
 
-export type { HeatLevel };
+export type HeatLevel = 'known' | 'common' | 'mid' | 'rare' | 'unknown';
 
 export function getHSKLevel(token: string): number | null {
   const result = dictionaryEngine.getEntry(token);
@@ -20,13 +19,42 @@ export function getHSKLevel(token: string): number | null {
  * Classifies a token based on priority:
  * 1. Saved Words -> known
  * 2. Curated Common -> common
- * 3. In Dictionary -> mid (shorter) or rare (longer)
- * 4. Not in Dictionary -> unknown
+ * 3. Explicit metadata from lexicon -> mid / rare
+ * 4. Missing Chinese -> unknown
+ * 5. Non-lexical -> null
+ * 
+ * FALLBACK POLICY: 
+ * If a token is FOUND but has no explicit frequencyBand or HSK level,
+ * it is classified as 'rare' to maintain epistemic honesty (we don't know it's common).
  */
 export function classifyToken(token: string, savedWords: Set<string>): HeatLevel | null {
-  const level = BonusMaskSystem.classify(token, savedWords, dictionaryEngine);
-  console.log(`[HEATMAP] token=${token} level=${level}`);
-  return level;
+  // 1. Saved Words -> known
+  if (savedWords.has(token)) return 'known';
+
+  const result = dictionaryEngine.getEntry(token);
+  
+  // 2. Non-lexical -> no heat class
+  if (result.truthStatus === 'NON_LEXICAL') return null;
+
+  // 3. Curated -> common (Curated entries are by definition common learning targets)
+  if (result.truthStatus === 'CURATED') return 'common';
+
+  // 4. Found in Dictionary -> use metadata
+  if (result.truthStatus === 'FOUND' && result.entry) {
+    const entry = result.entry;
+    if (entry.frequencyBand === 'common') return 'common';
+    if (entry.hsk && entry.hsk <= 2) return 'common';
+    if (entry.hsk && entry.hsk <= 4) return 'mid';
+    if (entry.frequencyBand) return entry.frequencyBand;
+    
+    // Honest fallback: If we found it but don't have frequency data, it's 'rare'
+    return 'rare';
+  }
+
+  // 5. Missing from Dictionary -> unknown
+  if (result.truthStatus === 'MISSING') return 'unknown';
+
+  return 'unknown';
 }
 
 export function getHeatClass(token: string, savedWords: Set<string>): string {

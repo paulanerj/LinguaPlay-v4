@@ -4,9 +4,8 @@
  */
 
 import { stateManager } from './state.ts';
-import { GravitySystem } from '../engine/GravitySystem.ts';
 import { dictionaryEngine } from './dictionaryEngine.ts';
-import { BonusMaskSystem } from '../engine/BonusMaskSystem.ts';
+import { classifyToken } from './frequencyHeatmap.ts';
 import { attentionEngine } from './attentionEngine.ts';
 
 let isDebugVisible = false;
@@ -74,17 +73,14 @@ function updateDebugOverlay() {
   const tokenEls = Array.from(activeRow.querySelectorAll('.token')) as HTMLElement[];
   const tokens = tokenEls.map(el => el.getAttribute('data-token') || '');
   
-  const trace = GravitySystem.getDecisionTrace(
+  const trace = attentionEngine.getDecisionTrace(
     tokens,
-    state.savedWords,
-    attentionEngine.getReviewedInCycle(),
-    attentionEngine.getReviewedInSession(),
-    dictionaryEngine
+    state.savedWords
   );
 
   const tokenRows = tokens.map(t => {
     const res = dictionaryEngine.getEntry(t);
-    const level = BonusMaskSystem.classify(t, state.savedWords, dictionaryEngine);
+    const level = classifyToken(t, state.savedWords);
     const isReviewedCycle = attentionEngine.getReviewedInCycle().has(t);
     const isReviewedSession = attentionEngine.getReviewedInSession().has(t);
     
