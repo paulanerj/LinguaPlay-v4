@@ -10,6 +10,8 @@ import { syncSubtitles } from './subtitleSync.ts';
 import { getHeatLabel } from './frequencyHeatmap.ts';
 import { attentionEngine } from './attentionEngine.ts';
 import { parseSRT } from './subtitleParser.ts';
+import { logExposure } from './pedagogy.ts';
+import { learningMemory } from './learningMemory.ts';
 
 export function initUI() {
   const video = document.querySelector('video') as HTMLVideoElement;
@@ -168,6 +170,15 @@ export function initUI() {
       activeRow.querySelectorAll(`.token[data-token="${lastAttentionTarget}"]`).forEach(el => {
         el.classList.add('attention-target');
       });
+
+      // Instrument Exposure: Target
+      logExposure({
+        token: lastAttentionTarget,
+        timestamp: Date.now(),
+        subtitleIndex: state.activeSubtitleId,
+        attentionState: 'target',
+        interactionType: 'view'
+      });
     }
   }
 
@@ -196,6 +207,7 @@ export function initUI() {
 
     // 2. Handle Active Subtitle Change (Multi-line Overlay + Transcript Scroll)
     if (state.activeSubtitleId !== lastActiveId) {
+      const isNewActive = state.activeSubtitleId !== null && state.activeSubtitleId !== lastActiveId;
       lastActiveId = state.activeSubtitleId;
       
       if (state.activeSubtitleId !== null) {
@@ -215,6 +227,30 @@ export function initUI() {
         if (activeRow) {
           activeRow.classList.add('active');
           activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Instrument Exposure & Record Memory: Passive View for all tokens in the active row
+        const currentSub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+        if (currentSub && currentSub.tokens) {
+          const now = Date.now();
+          currentSub.tokens.forEach(token => {
+            // Log Exposure
+            logExposure({
+              token,
+              timestamp: now,
+              subtitleIndex: state.activeSubtitleId,
+              attentionState: 'passive',
+              interactionType: 'view'
+            });
+
+            // Record Encounter (Only once per activation)
+            if (isNewActive) {
+              const lookup = dictionaryEngine.getEntry(token);
+              if (lookup.truthStatus !== 'NON_LEXICAL') {
+                learningMemory.recordEncounter(token, now);
+              }
+            }
+          });
         }
 
         // Attention Engine Integration
@@ -249,6 +285,10 @@ export function initUI() {
         const heatLabel = getHeatLabel(state.selectedToken, state.savedWords);
         const isSuggested = state.selectedToken === lastAttentionTarget;
         
+        // Memory Stats
+        const memory = learningMemory.getRecord(state.selectedToken);
+        const lastSeen = memory ? new Date(memory.lastSeenAt).toLocaleString() : 'Never';
+
         // Find examples (limit to 5 for performance)
         const examples = state.subtitles.filter(s => s.text.includes(state.selectedToken!)).slice(0, 5);
         const examplesHtml = examples.map(s => renderSubtitleRow(s, state.savedWords, 'example-row')).join('');
@@ -286,6 +326,33 @@ export function initUI() {
             </div>
             <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
               <span>HSK Level:</span> --
+            </div>
+          </div>
+
+          <!-- Memory Metadata Section -->
+          <div class="mb-6 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+            <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Memory Trace</h4>
+            <div class="grid grid-cols-3 gap-2 text-[10px] mb-2">
+              <div class="flex flex-col">
+                <span class="opacity-50">Encounters</span>
+                <span class="font-bold text-accent-primary">${memory?.encounterCount || 0}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="opacity-50">Reviews</span>
+                <span class="font-bold text-accent-primary">${memory?.reviewCount || 0}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="opacity-50">Saves</span>
+                <span class="font-bold text-accent-primary">${memory?.saveCount || 0}</span>
+              </div>
+            </div>
+            <div class="text-[10px]">
+              <span class="opacity-50">Last Seen:</span>
+              <span class="opacity-80">${lastSeen}</span>
+            </div>
+            <div class="text-[10px] mt-1">
+              <span class="opacity-50">Cognitive State:</span>
+              <span class="opacity-80 italic">Not yet inferred</span>
             </div>
           </div>
 
@@ -336,6 +403,19 @@ export function initUI() {
     if (target.classList.contains('token')) {
       const token = target.getAttribute('data-token');
       if (token) {
+        const now = Date.now();
+        // Instrument Exposure: Selected
+        logExposure({
+          token,
+          timestamp: now,
+          subtitleIndex: stateManager.getState().activeSubtitleId,
+          attentionState: 'selected',
+          interactionType: 'click'
+        });
+
+        // Record Review in Memory
+        learningMemory.recordReview(token, now);
+
         attentionEngine.markTokenReviewed(token);
         stateManager.setState({ selectedToken: token });
         updateAttentionTarget();
@@ -356,6 +436,7 @@ export function initUI() {
     if (target.id === 'btn-save-word') {
       const state = stateManager.getState();
       if (state.selectedToken) {
+        const now = Date.now();
         const newSaved = new Set(state.savedWords);
         if (newSaved.has(state.selectedToken)) {
           newSaved.delete(state.selectedToken);
@@ -364,6 +445,9 @@ export function initUI() {
         }
         stateManager.setState({ savedWords: newSaved });
         
+        // Record Save in Memory
+        learningMemory.recordSave(state.selectedToken, now);
+
         // Efficient DOM update for saved tokens across the app
         document.querySelectorAll(`.token[data-token="${state.selectedToken}"]`).forEach(el => {
           el.classList.toggle('saved', newSaved.has(state.selectedToken!));
