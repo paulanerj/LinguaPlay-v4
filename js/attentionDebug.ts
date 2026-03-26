@@ -7,33 +7,142 @@ import { stateManager } from './state.ts';
 import { dictionaryEngine } from './dictionaryEngine.ts';
 import { classifyToken } from './frequencyHeatmap.ts';
 import { attentionEngine } from './attentionEngine.ts';
+import { cognitiveInference } from './cognitiveInference.ts';
+import { reinforcementPlanner } from './reinforcementPlanner.ts';
+import { inferenceDebug } from './inferenceDebug.ts';
+import { formatOrchestrationDecision, formatReviewQueuePreview } from './orchestrationDebug.ts';
 
-let isDebugVisible = false;
 let debugOverlay: HTMLElement | null = null;
+let cognitiveDebugOverlay: HTMLElement | null = null;
 
 export function initAttentionDebug() {
   window.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'd') {
-      isDebugVisible = !isDebugVisible;
-      updateDebugOverlay();
+      const current = stateManager.getState().debugEnabled;
+      stateManager.setState({ debugEnabled: !current });
+    }
+    if (e.key.toLowerCase() === 'c') {
+      const current = stateManager.getState().cognitiveDebugEnabled;
+      stateManager.setState({ cognitiveDebugEnabled: !current });
     }
   });
 
-  stateManager.subscribe(() => {
-    if (isDebugVisible) {
+  stateManager.subscribe((state) => {
+    if (state.debugEnabled) {
       updateDebugOverlay();
+    } else {
+      if (debugOverlay) {
+        debugOverlay.classList.add('hidden');
+      }
+      document.querySelectorAll('.token.dev-stack').forEach(el => el.classList.remove('dev-stack'));
+    }
+
+    if (state.cognitiveDebugEnabled) {
+      updateCognitiveDebugOverlay();
+    } else {
+      if (cognitiveDebugOverlay) {
+        cognitiveDebugOverlay.classList.add('hidden');
+      }
     }
   });
 }
 
-function updateDebugOverlay() {
-  if (!isDebugVisible) {
-    if (debugOverlay) {
-      debugOverlay.classList.add('hidden');
-    }
-    document.querySelectorAll('.token.dev-stack').forEach(el => el.classList.remove('dev-stack'));
-    return;
+function updateCognitiveDebugOverlay() {
+  const state = stateManager.getState();
+  if (!state.cognitiveDebugEnabled) return;
+
+  if (!cognitiveDebugOverlay) {
+    cognitiveDebugOverlay = document.createElement('div');
+    cognitiveDebugOverlay.id = 'cognitive-debug-overlay';
+    cognitiveDebugOverlay.className = 'fixed top-4 right-4 z-[100] bg-slate-900/95 border border-accent-secondary/50 rounded-xl p-4 text-[10px] font-mono text-white shadow-2xl max-w-md pointer-events-none overflow-y-auto max-h-[90vh]';
+    document.body.appendChild(cognitiveDebugOverlay);
   }
+
+  cognitiveDebugOverlay.classList.remove('hidden');
+
+  let content = `
+    <div class="mb-2 text-accent-secondary font-bold border-b border-accent-secondary/30 pb-1 flex justify-between">
+      <span>COGNITIVE DEBUG MODE</span>
+    </div>
+  `;
+
+  if (state.activeOrchestrationDecision) {
+    content += formatOrchestrationDecision(state.activeOrchestrationDecision);
+  }
+
+  if (state.reviewQueuePreview) {
+    content += formatReviewQueuePreview(state.reviewQueuePreview);
+  }
+
+  if (state.activeCognitiveAttentionAdvice) {
+    const advice = state.activeCognitiveAttentionAdvice;
+    content += `
+      <div class="mb-4 bg-slate-800/50 p-2 rounded border border-white/10">
+        <div class="text-accent-secondary font-bold mb-1">ATTENTION ADVICE</div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><span class="opacity-50">Baseline:</span> ${advice.baselineTarget || 'None'}</div>
+          <div><span class="opacity-50">Advised:</span> <span class="${advice.shouldOverride ? 'text-accent-primary font-bold' : ''}">${advice.advisedTarget || 'None'}</span></div>
+        </div>
+        ${advice.shouldOverride ? `<div class="mt-1 text-accent-primary">Override: ${advice.reasonCode}</div>` : ''}
+      </div>
+    `;
+  }
+
+  if (state.activeSubtitleCognitivePriority) {
+    const priority = state.activeSubtitleCognitivePriority;
+    content += `
+      <div class="mb-4 bg-slate-800/50 p-2 rounded border border-white/10">
+        <div class="text-accent-secondary font-bold mb-1">SUBTITLE PRIORITY</div>
+        <div class="flex justify-between mb-1">
+          <span>Score: <span class="text-accent-primary font-bold">${priority.priorityScore.toFixed(1)}</span></span>
+          <span class="opacity-50">Top: ${priority.topTokens.slice(0, 3).join(', ')}</span>
+        </div>
+        <div class="text-[8px] opacity-70">
+          ${priority.rationale.map(r => `<div>• ${r}</div>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  if (state.topReviewCandidates && state.topReviewCandidates.length > 0) {
+    content += `
+      <div class="mb-4 bg-slate-800/50 p-2 rounded border border-white/10">
+        <div class="text-accent-secondary font-bold mb-1">REVIEW PLANNER (TOP 3)</div>
+        ${state.topReviewCandidates.slice(0, 3).map(c => `
+          <div class="border-b border-white/5 pb-1 mb-1 last:border-0 last:pb-0 last:mb-0">
+            <div class="flex justify-between">
+              <span>Sub #${c.subtitleId}</span>
+              <span class="text-accent-primary font-bold">${c.priorityScore.toFixed(1)}</span>
+            </div>
+            <div class="text-[8px] opacity-70">Tokens: ${c.topTokens.slice(0, 3).join(', ')}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  if (state.selectedToken) {
+    const now = Date.now();
+    const profile = cognitiveInference.deriveTokenProfile(state.selectedToken, now);
+    content += inferenceDebug.formatProfile(profile);
+  } else {
+    content += `<div class="opacity-50 mb-4">Select a token to view its cognitive profile.</div>`;
+  }
+
+  const now = Date.now();
+  const allProfiles = cognitiveInference.deriveAllProfiles(now);
+  const candidates = reinforcementPlanner.planReinforcement(allProfiles);
+  
+  content += `<div class="mt-4 border-t border-white/10 pt-4">`;
+  content += inferenceDebug.formatCandidates(candidates.slice(0, 10)); // Top 10
+  content += `</div>`;
+
+  cognitiveDebugOverlay.innerHTML = content;
+}
+
+function updateDebugOverlay() {
+  const state = stateManager.getState();
+  if (!state.debugEnabled) return;
 
   if (!debugOverlay) {
     debugOverlay = document.createElement('div');
@@ -44,7 +153,6 @@ function updateDebugOverlay() {
 
   debugOverlay.classList.remove('hidden');
 
-  const state = stateManager.getState();
   const subDisplay = document.getElementById('subtitle-display');
   const transcriptPanel = document.getElementById('transcript-panel');
   
@@ -95,7 +203,10 @@ function updateDebugOverlay() {
   }).join('');
 
   debugOverlay.innerHTML = `
-    <div class="mb-2 text-accent-primary font-bold border-b border-accent-primary/30 pb-1">ATTENTION DEBUG MODE</div>
+    <div class="mb-2 text-accent-primary font-bold border-b border-accent-primary/30 pb-1 flex justify-between">
+      <span>ATTENTION DEBUG MODE</span>
+      <span class="opacity-50 text-[8px]">${state.lexiconMode || 'UNKNOWN'}</span>
+    </div>
     
     <div class="mb-3">
       <div class="opacity-50 mb-1 uppercase tracking-widest">Current Row Tokens:</div>

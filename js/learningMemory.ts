@@ -4,6 +4,15 @@
  * CONTRACT:
  *   - Minimal, deterministic persistence via localStorage.
  *   - No pedagogical inference yet.
+ * 
+ * MEMORY INVARIANTS:
+ *   - Encounter Semantics: Counts every activation of a subtitle row containing the token.
+ *   - Persistence: Schema-consistent localStorage writes on every event.
+ *   - R4 Dependency: This raw trace is the prerequisite for future cognitive state inference.
+ * 
+ * FROZEN POLICY: EncounterPolicy.PER_ACTIVATION
+ *   - Re-watching the same subtitle counts as a new encounter.
+ *   - This is a frozen learning model assumption for the current baseline.
  */
 
 import { TokenMemoryRecord, TokenMemoryStore } from './pedagogy.ts';

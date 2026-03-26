@@ -13,6 +13,13 @@ import { parseSRT } from './subtitleParser.ts';
 import { logExposure } from './pedagogy.ts';
 import { learningMemory } from './learningMemory.ts';
 
+import { cognitiveSelectors } from './cognitiveSelectors.ts';
+import { cognitiveOrchestrator } from './cognitiveOrchestrator.ts';
+import { sessionScheduler } from './sessionScheduler.ts';
+import { cognitiveInference } from './cognitiveInference.ts';
+import { reinforcementPlanner } from './reinforcementPlanner.ts';
+import { buildReviewQueue } from './reviewQueue.ts';
+
 export function initUI() {
   const video = document.querySelector('video') as HTMLVideoElement;
   const subDisplay = document.getElementById('subtitle-display')!;
@@ -32,6 +39,7 @@ export function initUI() {
   let lastSelectedToken: string | null = null;
   let lastSavedWordsRef: Set<string> | null = null;
   let lastAttentionTarget: string | null = null;
+  let lastReviewQueueRef: any = null;
 
   let videoFile: File | null = null;
   let srtFile: File | null = null;
@@ -59,7 +67,12 @@ export function initUI() {
     stateManager.setState({
       selectedToken: null,
       activeSubtitleId: null,
-      currentTime: 0
+      currentTime: 0,
+      activeCognitiveAttentionAdvice: null,
+      activeSubtitleCognitivePriority: null,
+      topReviewCandidates: [],
+      selectedTokenLearningProfile: null,
+      selectedTokenReinforcementClass: null
     });
 
     // 2. Clear Attention Engine
@@ -111,6 +124,12 @@ export function initUI() {
           srtFile = file;
           resetContentState();
           stateManager.setState({ subtitles: subs });
+          
+          // Compute review candidates once subtitles are loaded
+          const now = Date.now();
+          const reviewCandidates = cognitiveSelectors.getReviewCandidates(subs, now);
+          stateManager.setState({ topReviewCandidates: reviewCandidates });
+          
           updateStatus();
         } catch (err) {
           console.error("SRT Parse Failed:", err);
@@ -144,6 +163,12 @@ export function initUI() {
     const subs = parseSRT(sampleSRT);
     resetContentState();
     stateManager.setState({ subtitles: subs });
+    
+    // Compute review candidates
+    const now = Date.now();
+    const reviewCandidates = cognitiveSelectors.getReviewCandidates(subs, now);
+    stateManager.setState({ topReviewCandidates: reviewCandidates });
+    
     updateStatus();
   });
 
@@ -151,6 +176,10 @@ export function initUI() {
     const state = stateManager.getState();
     if (state.activeSubtitleId === null) {
       lastAttentionTarget = null;
+      stateManager.setState({ 
+        activeCognitiveAttentionAdvice: null,
+        activeSubtitleCognitivePriority: null
+      });
       return;
     }
 
@@ -160,7 +189,55 @@ export function initUI() {
     const tokenEls = Array.from(activeRow.querySelectorAll('.token')) as HTMLElement[];
     const tokens = tokenEls.map(el => el.getAttribute('data-token') || '');
     
-    lastAttentionTarget = attentionEngine.getNextTargetToken(tokens, state.savedWords);
+    const baselineTarget = attentionEngine.getNextTargetToken(tokens, state.savedWords);
+    
+    const now = Date.now();
+    // Compute cognitive advice
+    const advice = cognitiveSelectors.getAttentionAdvice(tokens, baselineTarget, now);
+    const priority = cognitiveSelectors.getSubtitlePriority(state.activeSubtitleId, tokens, now);
+    
+    // Update review candidates
+    const reviewCandidates = cognitiveSelectors.getReviewCandidates(state.subtitles, now);
+
+    // Stage-3 Orchestration
+    const allProfiles = cognitiveInference.deriveAllProfiles(now);
+    const reinforcementCandidates = reinforcementPlanner.planReinforcement(allProfiles);
+    
+    // Record subtitle transition for scheduler
+    sessionScheduler.recordSubtitleTransition(
+      priority.priorityScore,
+      priority.rescueCount,
+      null // Not surfacing a review subtitle directly from here yet
+    );
+
+    const orchestrationDecision = cognitiveOrchestrator.orchestrate(
+      state.activeSubtitleId,
+      tokens,
+      baselineTarget,
+      advice.shouldOverride ? advice.advisedTarget : null,
+      allProfiles,
+      reinforcementCandidates,
+      priority,
+      reviewCandidates,
+      now
+    );
+
+    const reviewQueue = buildReviewQueue(reviewCandidates, reinforcementCandidates, sessionScheduler.getState().recentlySurfacedSubtitleId);
+    const snapshot = cognitiveOrchestrator.generateSnapshot(state.activeSubtitleId, orchestrationDecision, reinforcementCandidates, reviewQueue);
+
+    // The orchestrator advises the target
+    lastAttentionTarget = orchestrationDecision.advisedTarget || baselineTarget;
+
+    stateManager.setState({
+      activeCognitiveAttentionAdvice: advice,
+      activeSubtitleCognitivePriority: priority,
+      topReviewCandidates: reviewCandidates,
+      activeCognitiveMode: orchestrationDecision.mode,
+      activeFocusStrategy: orchestrationDecision.focusStrategy,
+      activeOrchestrationDecision: orchestrationDecision,
+      sessionCognitiveSnapshot: snapshot,
+      reviewQueuePreview: reviewQueue
+    });
     
     // Remove existing target class
     document.querySelectorAll('.token.attention-target').forEach(el => el.classList.remove('attention-target'));
@@ -194,7 +271,8 @@ export function initUI() {
     // Update Lexicon Status
     const statusEl = document.getElementById('status-lexicon');
     if (statusEl) {
-      statusEl.textContent = state.lexiconLoaded ? 'Lexicon: Ready' : 'Lexicon: Loading...';
+      const modeStr = state.lexiconMode ? ` (${state.lexiconMode})` : '';
+      statusEl.textContent = state.lexiconLoaded ? `Lexicon: Ready${modeStr}` : 'Lexicon: Loading...';
       statusEl.classList.toggle('text-green-400', state.lexiconLoaded);
     }
 
@@ -264,7 +342,7 @@ export function initUI() {
     }
 
     // 3. Handle Focus Panel & Example Sandbox
-    if (state.selectedToken !== lastSelectedToken || state.savedWords !== lastSavedWordsRef) {
+    if (state.selectedToken !== lastSelectedToken || state.savedWords !== lastSavedWordsRef || state.reviewQueuePreview !== lastReviewQueueRef) {
       // Visual feedback for selected token
       if (state.selectedToken !== lastSelectedToken) {
         document.querySelectorAll('.token.active').forEach(el => el.classList.remove('active'));
@@ -275,6 +353,7 @@ export function initUI() {
 
       lastSelectedToken = state.selectedToken;
       lastSavedWordsRef = state.savedWords;
+      lastReviewQueueRef = state.reviewQueuePreview;
 
       if (state.selectedToken) {
         const lookup = dictionaryEngine.getEntry(state.selectedToken);
@@ -352,8 +431,14 @@ export function initUI() {
             </div>
             <div class="text-[10px] mt-1">
               <span class="opacity-50">Cognitive State:</span>
-              <span class="opacity-80 italic">Not yet inferred</span>
+              <span class="opacity-80 italic">${state.selectedTokenLearningProfile ? state.selectedTokenLearningProfile.inferredState : 'Not yet inferred'}</span>
             </div>
+            ${state.selectedTokenReinforcementClass ? `
+            <div class="text-[10px] mt-1">
+              <span class="opacity-50">Reinforcement Class:</span>
+              <span class="opacity-80 font-bold text-accent-secondary">${state.selectedTokenReinforcementClass}</span>
+            </div>
+            ` : ''}
           </div>
 
           <!-- Heatmap Legend -->
@@ -376,6 +461,25 @@ export function initUI() {
           </div>
         `;
       } else {
+        let reviewQueueHtml = '';
+        if (state.activeOrchestrationDecision?.shouldSurfaceReviewQueue && state.reviewQueuePreview && state.reviewQueuePreview.length > 0) {
+          const topReview = state.reviewQueuePreview[0];
+          reviewQueueHtml = `
+            <div class="w-full max-w-[250px] mt-4 p-3 bg-accent-primary/10 border border-accent-primary/30 rounded-lg text-left">
+              <h4 class="text-xs uppercase tracking-wider text-accent-primary mb-2 font-bold flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-accent-primary animate-pulse"></span>
+                Review Opportunity
+              </h4>
+              <div class="text-[10px] opacity-80 mb-2">
+                The orchestrator suggests reviewing a previous subtitle to rescue decaying knowledge.
+              </div>
+              <button class="w-full py-2 bg-accent-primary/20 hover:bg-accent-primary/40 text-accent-primary rounded text-xs font-bold transition-colors" onclick="document.querySelector('.transcript-row[data-id=\\'${topReview.subtitleId}\\']')?.click()">
+                Review Subtitle #${topReview.subtitleId}
+              </button>
+            </div>
+          `;
+        }
+
         focusPanel.innerHTML = `
           <div class="flex h-full flex-col items-center justify-center opacity-30 text-center gap-4">
             <p>Select a token to view details and examples.</p>
@@ -389,6 +493,7 @@ export function initUI() {
                 <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"></span> Unknown</div>
               </div>
             </div>
+            ${reviewQueueHtml}
           </div>
         `;
       }
@@ -417,7 +522,16 @@ export function initUI() {
         learningMemory.recordReview(token, now);
 
         attentionEngine.markTokenReviewed(token);
-        stateManager.setState({ selectedToken: token });
+        
+        const profile = cognitiveSelectors.getProfile(token, now);
+        const candidates = cognitiveSelectors.getReinforcementCandidates(now);
+        const candidate = candidates.find(c => c.token === token);
+        
+        stateManager.setState({ 
+          selectedToken: token,
+          selectedTokenLearningProfile: profile,
+          selectedTokenReinforcementClass: candidate ? candidate.reinforcementClass : null
+        });
         updateAttentionTarget();
       }
       return;

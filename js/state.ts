@@ -7,6 +7,23 @@
  *   - Outputs: Notifies listeners of changes.
  */
 
+import { TokenLearningProfile, ReinforcementCandidate, ReinforcementClass } from './cognitiveTypes.ts';
+import { CognitiveAttentionAdvice } from './cognitiveAttention.ts';
+import { SubtitleCognitivePriority } from './subtitleCognitivePriority.ts';
+import { ReviewCandidate } from './reviewPlanner.ts';
+import { CognitiveMode, CognitiveFocusStrategy, OrchestrationDecision, SessionCognitiveSnapshot, ReviewFlowState, ReviewQueueEntry } from './orchestrationTypes.ts';
+
+export enum LexiconMode {
+  FULL = 'FULL',
+  FALLBACK = 'FALLBACK'
+}
+
+export enum EncounterPolicy {
+  PER_ACTIVATION = 'PER_ACTIVATION',
+  PER_SESSION = 'PER_SESSION',
+  PER_TIME_WINDOW = 'PER_TIME_WINDOW'
+}
+
 export interface Subtitle {
   id: number;
   start: number;
@@ -22,8 +39,26 @@ export interface AppState {
   activeSubtitleId: number | null;
   selectedToken: string | null;
   lexiconLoaded: boolean;
+  lexiconMode: LexiconMode | null;
+  debugEnabled: boolean;
+  encounterPolicy: EncounterPolicy;
   savedWords: Set<string>;
   pedagogicalDemo?: boolean;
+  selectedTokenLearningProfile?: TokenLearningProfile | null;
+  topReinforcementCandidates?: ReinforcementCandidate[];
+  cognitiveDebugEnabled?: boolean;
+  activeCognitiveAttentionAdvice?: CognitiveAttentionAdvice | null;
+  activeSubtitleCognitivePriority?: SubtitleCognitivePriority | null;
+  topReviewCandidates?: ReviewCandidate[];
+  selectedTokenReinforcementClass?: ReinforcementClass | null;
+
+  // Stage-3 Orchestration Fields
+  activeCognitiveMode?: CognitiveMode;
+  activeFocusStrategy?: CognitiveFocusStrategy;
+  activeOrchestrationDecision?: OrchestrationDecision | null;
+  sessionCognitiveSnapshot?: SessionCognitiveSnapshot | null;
+  reviewFlowState?: ReviewFlowState;
+  reviewQueuePreview?: ReviewQueueEntry[];
 }
 
 class StateManager {
@@ -34,8 +69,12 @@ class StateManager {
     activeSubtitleId: null,
     selectedToken: null,
     lexiconLoaded: false,
+    lexiconMode: null,
+    debugEnabled: false,
+    encounterPolicy: EncounterPolicy.PER_ACTIVATION,
     savedWords: new Set(),
-    pedagogicalDemo: true
+    pedagogicalDemo: true,
+    cognitiveDebugEnabled: false
   };
 
   private listeners: Set<(state: AppState) => void> = new Set();

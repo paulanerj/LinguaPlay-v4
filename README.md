@@ -7,16 +7,20 @@ LinguaPlay is a deterministic cognitive language learning engine driven by subti
 - Vite Build System
 - Tailwind CSS
 
-## Extracted Engine Primitives (Frozen)
-- `/engine/Reducer.ts`: Pure State Transitions
-- `/engine/BonusMaskSystem.ts`: Difficulty Classification
-- `/engine/ChainEngine.ts`: Priority Progression
-- `/engine/GravitySystem.ts`: Target Selection
+## Core Engine Modules (Frozen)
+- `js/attentionEngine.ts`: Priority-based target selection
+- `js/dictionaryEngine.ts`: Lexical truth and dictionary management
+- `js/frequencyHeatmap.ts`: Token difficulty classification
+- `js/learningMemory.ts`: Persistent token memory store
+- `js/pedagogy.ts`: Cognitive state and exposure schemas
+- `js/segmentationPostProcessor.ts`: Linguistic chunking refinement
+- `js/tokenTrie.ts`: Max-Match segmentation
 
-## Frozen Subsystems
-- `tokenTrie.ts`: Max-Match Segmentation
-- `subtitleParser.ts`: SRT Parsing
-- `subtitleSync.ts`: Video Synchronization
-- `state.ts`: Pub/Sub State Loop
-- `dictionaryEngine.ts`: Lexicon Merging
-- `app.ts`: Bootstrap Sequence
+## Subsystems
+- `js/subtitleParser.ts`: SRT Parsing
+- `js/subtitleSync.ts`: Video Synchronization
+- `js/state.ts`: Pub/Sub State Loop
+- `js/app.ts`: Bootstrap Sequence
+- `js/uiBindings.ts`: UI Event Orchestration
+- `js/subtitleRenderer.ts`: DOM-based rendering
+- `js/attentionDebug.ts`: Engine visualization

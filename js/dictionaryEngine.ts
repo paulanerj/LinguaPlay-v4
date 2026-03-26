@@ -8,7 +8,7 @@
  */
 
 import { tokenTrie } from './tokenTrie.ts';
-import { stateManager } from './state.ts';
+import { stateManager, LexiconMode } from './state.ts';
 
 export interface DictEntry {
   pinyin: string;
@@ -99,13 +99,13 @@ class DictionaryEngine {
 
       console.log(`Lexicon Loaded: ${accepted} accepted, ${rejected} rejected. Total: ${this.dictionary.size}`);
       this.rebuildTrie();
-      stateManager.setState({ lexiconLoaded: true });
+      stateManager.setState({ lexiconLoaded: true, lexiconMode: LexiconMode.FULL });
     } catch (e) {
       console.error("Lexicon Error:", e);
       console.log("Fallback Mode: Using curated entries only.");
       // Fallback to curated only
       this.rebuildTrie();
-      stateManager.setState({ lexiconLoaded: true }); // Reflect fallback success
+      stateManager.setState({ lexiconLoaded: true, lexiconMode: LexiconMode.FALLBACK }); // Reflect fallback success
     }
   }
 
