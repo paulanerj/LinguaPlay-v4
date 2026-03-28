@@ -1,5 +1,6 @@
 import { ReinforcementCandidate, ReinforcementClass, TokenLearningProfile } from './cognitiveTypes.ts';
 import { dictionaryEngine } from './dictionaryEngine.ts';
+import { computeNextReviewAt } from './spacedRepetition.ts';
 
 export class ReinforcementPlanner {
   /**
@@ -52,14 +53,26 @@ export class ReinforcementPlanner {
   /**
    * Generates a sorted list of reinforcement candidates from a list of profiles.
    */
-  planReinforcement(profiles: TokenLearningProfile[], tokenAppearanceOrder?: Map<string, number>): ReinforcementCandidate[] {
+  planReinforcement(now: number, profiles: TokenLearningProfile[], tokenAppearanceOrder?: Map<string, number>): ReinforcementCandidate[] {
     const candidates: ReinforcementCandidate[] = profiles.map(profile => {
       const reinforcementClass = this.classifyToken(profile);
+      const memoryRecord = {
+        token: profile.token,
+        lastSeenAt: profile.lastSeenAt,
+        lastReviewedAt: profile.lastReviewedAt,
+        // Mocking other fields since computeNextReviewAt only needs lastSeenAt and lastReviewedAt
+        encounterCount: 0,
+        reviewCount: 0,
+        saveCount: 0,
+        firstSeenAt: profile.lastSeenAt || now
+      };
+      
       return {
         token: profile.token,
         reinforcementClass,
         profile,
-        priorityScore: this.getClassPriority(reinforcementClass)
+        priorityScore: this.getClassPriority(reinforcementClass),
+        nextReviewAt: computeNextReviewAt(memoryRecord, profile.inferredState, reinforcementClass, now)
       };
     });
 

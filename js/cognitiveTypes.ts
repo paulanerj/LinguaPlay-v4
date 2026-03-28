@@ -20,6 +20,8 @@ export interface TokenLearningProfile {
   familiarityScore: number;
   semanticLinkScore: number;
   evidenceSummary: string[];
+  lastSeenAt: number | null;
+  lastReviewedAt: number | null;
   profileVersion: 1;
 }
 
@@ -41,4 +43,5 @@ export interface ReinforcementCandidate {
   reinforcementClass: ReinforcementClass;
   profile: TokenLearningProfile;
   priorityScore: number; // Used for deterministic ordering
+  nextReviewAt: number;
 }

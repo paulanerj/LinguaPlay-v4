@@ -34,7 +34,14 @@
             demo mode active
           </div>
           
-          <div id="status-lexicon" class="text-xs text-accent">Lexicon: Loading...</div>
+          <div id="session-metrics" class="text-[10px] uppercase tracking-widest opacity-60 flex gap-4 ml-4">
+            <span>Seen: <span id="metric-seen" class="font-bold text-accent-primary">0</span></span>
+            <span>Reviewed: <span id="metric-reviewed" class="font-bold text-accent-secondary">0</span></span>
+            <span>Rescued: <span id="metric-rescued" class="font-bold text-green-400">0</span></span>
+            <span>Pressure: <span id="metric-pressure" class="font-bold text-orange-400">0%</span></span>
+          </div>
+
+          <div id="status-lexicon" class="text-xs text-accent ml-4">Lexicon: Loading...</div>
         </div>
 
         <div id="transcript-panel"></div>

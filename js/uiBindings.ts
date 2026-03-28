@@ -13,12 +13,9 @@ import { parseSRT } from './subtitleParser.ts';
 import { logExposure } from './pedagogy.ts';
 import { learningMemory } from './learningMemory.ts';
 
+import { timeAuthority } from './timeAuthority.ts';
 import { cognitiveSelectors } from './cognitiveSelectors.ts';
-import { cognitiveOrchestrator } from './cognitiveOrchestrator.ts';
-import { sessionScheduler } from './sessionScheduler.ts';
-import { cognitiveInference } from './cognitiveInference.ts';
-import { reinforcementPlanner } from './reinforcementPlanner.ts';
-import { buildReviewQueue } from './reviewQueue.ts';
+import { engineLoop } from './engineLoop.ts';
 
 export function initUI() {
   const video = document.querySelector('video') as HTMLVideoElement;
@@ -126,7 +123,7 @@ export function initUI() {
           stateManager.setState({ subtitles: subs });
           
           // Compute review candidates once subtitles are loaded
-          const now = Date.now();
+          const now = timeAuthority.getNow();
           const reviewCandidates = cognitiveSelectors.getReviewCandidates(subs, now);
           stateManager.setState({ topReviewCandidates: reviewCandidates });
           
@@ -165,99 +162,12 @@ export function initUI() {
     stateManager.setState({ subtitles: subs });
     
     // Compute review candidates
-    const now = Date.now();
+    const now = timeAuthority.getNow();
     const reviewCandidates = cognitiveSelectors.getReviewCandidates(subs, now);
     stateManager.setState({ topReviewCandidates: reviewCandidates });
     
     updateStatus();
   });
-
-  function updateAttentionTarget() {
-    const state = stateManager.getState();
-    if (state.activeSubtitleId === null) {
-      lastAttentionTarget = null;
-      stateManager.setState({ 
-        activeCognitiveAttentionAdvice: null,
-        activeSubtitleCognitivePriority: null
-      });
-      return;
-    }
-
-    const activeRow = subDisplay.querySelector('.overlay-active');
-    if (!activeRow) return;
-
-    const tokenEls = Array.from(activeRow.querySelectorAll('.token')) as HTMLElement[];
-    const tokens = tokenEls.map(el => el.getAttribute('data-token') || '');
-    
-    const baselineTarget = attentionEngine.getNextTargetToken(tokens, state.savedWords);
-    
-    const now = Date.now();
-    // Compute cognitive advice
-    const advice = cognitiveSelectors.getAttentionAdvice(tokens, baselineTarget, now);
-    const priority = cognitiveSelectors.getSubtitlePriority(state.activeSubtitleId, tokens, now);
-    
-    // Update review candidates
-    const reviewCandidates = cognitiveSelectors.getReviewCandidates(state.subtitles, now);
-
-    // Stage-3 Orchestration
-    const allProfiles = cognitiveInference.deriveAllProfiles(now);
-    const reinforcementCandidates = reinforcementPlanner.planReinforcement(allProfiles);
-    
-    // Record subtitle transition for scheduler
-    sessionScheduler.recordSubtitleTransition(
-      priority.priorityScore,
-      priority.rescueCount,
-      null // Not surfacing a review subtitle directly from here yet
-    );
-
-    const orchestrationDecision = cognitiveOrchestrator.orchestrate(
-      state.activeSubtitleId,
-      tokens,
-      baselineTarget,
-      advice.shouldOverride ? advice.advisedTarget : null,
-      allProfiles,
-      reinforcementCandidates,
-      priority,
-      reviewCandidates,
-      now
-    );
-
-    const reviewQueue = buildReviewQueue(reviewCandidates, reinforcementCandidates, sessionScheduler.getState().recentlySurfacedSubtitleId);
-    const snapshot = cognitiveOrchestrator.generateSnapshot(state.activeSubtitleId, orchestrationDecision, reinforcementCandidates, reviewQueue);
-
-    // The orchestrator advises the target
-    lastAttentionTarget = orchestrationDecision.advisedTarget || baselineTarget;
-
-    stateManager.setState({
-      activeCognitiveAttentionAdvice: advice,
-      activeSubtitleCognitivePriority: priority,
-      topReviewCandidates: reviewCandidates,
-      activeCognitiveMode: orchestrationDecision.mode,
-      activeFocusStrategy: orchestrationDecision.focusStrategy,
-      activeOrchestrationDecision: orchestrationDecision,
-      sessionCognitiveSnapshot: snapshot,
-      reviewQueuePreview: reviewQueue
-    });
-    
-    // Remove existing target class
-    document.querySelectorAll('.token.attention-target').forEach(el => el.classList.remove('attention-target'));
-    
-    if (lastAttentionTarget) {
-      // Add to all instances of this token in the active row
-      activeRow.querySelectorAll(`.token[data-token="${lastAttentionTarget}"]`).forEach(el => {
-        el.classList.add('attention-target');
-      });
-
-      // Instrument Exposure: Target
-      logExposure({
-        token: lastAttentionTarget,
-        timestamp: Date.now(),
-        subtitleIndex: state.activeSubtitleId,
-        attentionState: 'target',
-        interactionType: 'view'
-      });
-    }
-  }
 
   // Video Time Update
   video.addEventListener('timeupdate', () => {
@@ -274,6 +184,42 @@ export function initUI() {
       const modeStr = state.lexiconMode ? ` (${state.lexiconMode})` : '';
       statusEl.textContent = state.lexiconLoaded ? `Lexicon: Ready${modeStr}` : 'Lexicon: Loading...';
       statusEl.classList.toggle('text-green-400', state.lexiconLoaded);
+    }
+
+    // Update Session Metrics
+    const metrics = state.sessionMetrics;
+    if (metrics) {
+      const elSeen = document.getElementById('metric-seen');
+      const elReviewed = document.getElementById('metric-reviewed');
+      const elRescued = document.getElementById('metric-rescued');
+      if (elSeen) elSeen.textContent = metrics.tokensSeen.toString();
+      if (elReviewed) elReviewed.textContent = metrics.tokensReviewed.toString();
+      if (elRescued) elRescued.textContent = metrics.rescueTokensResolved.toString();
+    }
+    
+    // Update Pressure
+    const pressure = state.activeOrchestrationDecision?.reviewPressureScore || 0;
+    const elPressure = document.getElementById('metric-pressure');
+    if (elPressure) {
+      elPressure.textContent = `${Math.round(pressure * 100)}%`;
+      if (pressure > 0.8) {
+        elPressure.className = 'font-bold text-red-500 animate-pulse';
+      } else if (pressure > 0.5) {
+        elPressure.className = 'font-bold text-orange-400';
+      } else {
+        elPressure.className = 'font-bold text-green-400';
+      }
+    }
+
+    // Handle Video Pausing for Reviews
+    const decision = state.activeGuidedControlDecision;
+    if (decision) {
+      const shouldPause = decision.shouldSurfaceReviewEntry || 
+                          decision.reviewProgressState === 'ROW_PROPOSED' || 
+                          decision.reviewProgressState === 'ROW_ACTIVE';
+      if (shouldPause && !video.paused) {
+        video.pause();
+      }
     }
 
     // 1. Render Transcript Once
@@ -295,7 +241,16 @@ export function initUI() {
         
         subDisplay.innerHTML = visibleSubs.map((s, i) => {
           const isLast = i === visibleSubs.length - 1;
-          return renderSubtitleRow(s, state.savedWords, isLast ? 'overlay-active' : 'overlay-past');
+          const rowHtml = renderSubtitleRow(s, state.savedWords, isLast ? 'overlay-active' : 'overlay-past');
+          if (isLast) {
+            return `<div class="relative group pointer-events-auto">
+                      ${rowHtml}
+                      <button class="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-slate-800/80 rounded-full text-slate-300 hover:text-white hover:bg-slate-700" onclick="window.replaySubtitle()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                      </button>
+                    </div>`;
+          }
+          return rowHtml;
         }).join('');
         subDisplay.classList.remove('hidden');
 
@@ -310,7 +265,7 @@ export function initUI() {
         // Instrument Exposure & Record Memory: Passive View for all tokens in the active row
         const currentSub = state.subtitles.find(s => s.id === state.activeSubtitleId);
         if (currentSub && currentSub.tokens) {
-          const now = Date.now();
+          const now = timeAuthority.getNow();
           currentSub.tokens.forEach(token => {
             // Log Exposure
             logExposure({
@@ -320,20 +275,19 @@ export function initUI() {
               attentionState: 'passive',
               interactionType: 'view'
             });
-
-            // Record Encounter (Only once per activation)
-            if (isNewActive) {
-              const lookup = dictionaryEngine.getEntry(token);
-              if (lookup.truthStatus !== 'NON_LEXICAL') {
-                learningMemory.recordEncounter(token, now);
-              }
-            }
           });
         }
 
         // Attention Engine Integration
         attentionEngine.resetAttentionCycle();
-        updateAttentionTarget();
+        
+        if (isNewActive) {
+          engineLoop.processEvent({ 
+            type: 'SUBTITLE_TRANSITION', 
+            subtitleId: state.activeSubtitleId, 
+            tokens: currentSub?.tokens || [] 
+          });
+        }
       } else {
         subDisplay.innerHTML = '';
         subDisplay.classList.add('hidden');
@@ -342,6 +296,39 @@ export function initUI() {
     }
 
     // 3. Handle Focus Panel & Example Sandbox
+    if (state.lastAttentionTarget !== lastAttentionTarget) {
+      document.querySelectorAll('.token.attention-target').forEach(el => el.classList.remove('attention-target'));
+      lastAttentionTarget = state.lastAttentionTarget || null;
+      
+      if (lastAttentionTarget) {
+        const activeRow = subDisplay.querySelector('.overlay-active');
+        if (activeRow) {
+          activeRow.querySelectorAll(`.token[data-token="${lastAttentionTarget}"]`).forEach(el => {
+            el.classList.add('attention-target');
+          });
+        }
+        
+        // Instrument Exposure: Target
+        logExposure({
+          token: lastAttentionTarget,
+          timestamp: timeAuthority.getNow(),
+          subtitleIndex: state.activeSubtitleId,
+          attentionState: 'target',
+          interactionType: 'view'
+        });
+      }
+    }
+
+    // Handle Selected Token Highlighting
+    if (state.selectedToken !== lastSelectedToken) {
+      document.querySelectorAll('.token.selected').forEach(el => el.classList.remove('selected'));
+      if (state.selectedToken) {
+        document.querySelectorAll(`.token[data-token="${state.selectedToken}"]`).forEach(el => {
+          el.classList.add('selected');
+        });
+      }
+    }
+
     if (state.selectedToken !== lastSelectedToken || state.savedWords !== lastSavedWordsRef || state.reviewQueuePreview !== lastReviewQueueRef) {
       // Visual feedback for selected token
       if (state.selectedToken !== lastSelectedToken) {
@@ -462,28 +449,88 @@ export function initUI() {
         `;
       } else {
         let reviewQueueHtml = '';
-        if (state.activeOrchestrationDecision?.shouldSurfaceReviewQueue && state.reviewQueuePreview && state.reviewQueuePreview.length > 0) {
-          const topReview = state.reviewQueuePreview[0];
+        const decision = state.activeGuidedControlDecision;
+        
+        if (decision && decision.shouldSurfaceReviewEntry && decision.proposedReviewSubtitleId !== null) {
+          const entry = state.reviewQueuePreview?.entries.find(e => e.subtitleId === decision.proposedReviewSubtitleId);
+          const dueCount = entry?.dueTokensCount || entry?.targetTokens.length || 0;
+          const topTokens = entry?.targetTokens.slice(0, 3).join(', ') || '';
+          
           reviewQueueHtml = `
-            <div class="w-full max-w-[250px] mt-4 p-3 bg-accent-primary/10 border border-accent-primary/30 rounded-lg text-left">
+            <div class="w-full max-w-[250px] mt-4 p-4 bg-accent-primary/10 border border-accent-primary/30 rounded-lg text-left shadow-lg">
               <h4 class="text-xs uppercase tracking-wider text-accent-primary mb-2 font-bold flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-accent-primary animate-pulse"></span>
-                Review Opportunity
+                Review Ready
+              </h4>
+              <div class="text-sm font-semibold mb-1">
+                You have ${dueCount} important word${dueCount !== 1 ? 's' : ''} to review.
+              </div>
+              <div class="text-[10px] opacity-80 mb-3 italic">
+                Including: ${topTokens}
+              </div>
+              <div class="flex gap-2 mt-2">
+                <button class="flex-1 py-2 bg-accent-primary hover:bg-accent-primary/80 text-white rounded text-xs font-bold transition-colors" onclick="window.acceptReviewEntry()">
+                  Start Review
+                </button>
+                <button class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-bold transition-colors" onclick="window.declineReviewEntry()">
+                  Skip for now
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (decision && decision.reviewProgressState === 'ROW_PROPOSED' && decision.proposedReviewSubtitleId !== null) {
+          reviewQueueHtml = `
+            <div class="w-full max-w-[250px] mt-4 p-4 bg-accent-secondary/10 border border-accent-secondary/30 rounded-lg text-left shadow-lg">
+              <h4 class="text-xs uppercase tracking-wider text-accent-secondary mb-2 font-bold flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-accent-secondary animate-pulse"></span>
+                Review Active
+              </h4>
+              <div class="text-[10px] opacity-80 mb-3">
+                Please navigate to Subtitle #${decision.proposedReviewSubtitleId} to continue your review.
+              </div>
+              <button class="w-full py-2 bg-accent-secondary hover:bg-accent-secondary/80 text-white rounded text-xs font-bold transition-colors" onclick="document.querySelector('.transcript-row[data-id=\\'${decision.proposedReviewSubtitleId}\\']')?.click()">
+                Go to Subtitle #${decision.proposedReviewSubtitleId}
+              </button>
+            </div>
+          `;
+        } else if (decision && decision.reviewProgressState === 'ROW_ACTIVE') {
+          const entry = state.reviewQueuePreview?.entries.find(e => e.subtitleId === decision.proposedReviewSubtitleId);
+          const targetTokens = entry?.targetTokens || [];
+          const tokenHtml = targetTokens.map(t => `<span class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-accent-primary font-bold">${t}</span>`).join(' ');
+          
+          reviewQueueHtml = `
+            <div class="w-full max-w-[250px] mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-left shadow-lg">
+              <h4 class="text-xs uppercase tracking-wider text-green-400 mb-2 font-bold flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                Reviewing Row
               </h4>
               <div class="text-[10px] opacity-80 mb-2">
-                The orchestrator suggests reviewing a previous subtitle to rescue decaying knowledge.
+                Target words:
               </div>
-              <button class="w-full py-2 bg-accent-primary/20 hover:bg-accent-primary/40 text-accent-primary rounded text-xs font-bold transition-colors" onclick="document.querySelector('.transcript-row[data-id=\\'${topReview.subtitleId}\\']')?.click()">
-                Review Subtitle #${topReview.subtitleId}
-              </button>
+              <div class="flex flex-wrap gap-1 mb-4">
+                ${tokenHtml}
+              </div>
+              <div class="flex flex-col gap-2">
+                <button class="w-full py-2 bg-green-500 hover:bg-green-400 text-white rounded text-xs font-bold transition-colors" onclick="window.reviewGotIt('${targetTokens[0] || ''}')">
+                  Got it
+                </button>
+                <div class="flex gap-2">
+                  <button class="flex-1 py-2 bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 rounded text-xs font-bold transition-colors" onclick="window.reviewStillLearning('${targetTokens[0] || ''}')">
+                    Still learning
+                  </button>
+                  <button class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-bold transition-colors" onclick="window.reviewSkip()">
+                    Skip
+                  </button>
+                </div>
+              </div>
             </div>
           `;
         }
 
         focusPanel.innerHTML = `
-          <div class="flex h-full flex-col items-center justify-center opacity-30 text-center gap-4">
-            <p>Select a token to view details and examples.</p>
-            <div class="w-full max-w-[200px] p-3 bg-slate-900/50 rounded-lg border border-slate-800 text-left">
+          <div class="flex h-full flex-col items-center justify-center text-center gap-4">
+            <p class="opacity-30">Select a token to view details and examples.</p>
+            <div class="w-full max-w-[200px] p-3 bg-slate-900/50 rounded-lg border border-slate-800 text-left opacity-30">
               <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Difficulty Guide</h4>
               <div class="flex flex-col gap-1 text-[10px]">
                 <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-400"></span> Known (Saved)</div>
@@ -500,6 +547,42 @@ export function initUI() {
     }
   });
 
+  // Global Window functions for Review Actions
+  (window as any).acceptReviewEntry = () => {
+    engineLoop.processEvent({ type: 'REVIEW_ACCEPT' });
+  };
+
+  (window as any).declineReviewEntry = () => {
+    engineLoop.processEvent({ type: 'REVIEW_DECLINE' });
+  };
+
+  (window as any).resolveReviewRow = () => {
+    engineLoop.processEvent({ type: 'REVIEW_RESOLVE' });
+  };
+
+  (window as any).reviewGotIt = (token: string) => {
+    engineLoop.processEvent({ type: 'REVIEW_GOT_IT', token });
+  };
+
+  (window as any).reviewStillLearning = (token: string) => {
+    engineLoop.processEvent({ type: 'REVIEW_STILL_LEARNING', token });
+  };
+
+  (window as any).reviewSkip = () => {
+    engineLoop.processEvent({ type: 'REVIEW_SKIP' });
+  };
+
+  (window as any).replaySubtitle = () => {
+    const state = stateManager.getState();
+    if (state.activeSubtitleId !== null) {
+      const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+      if (sub && videoElement) {
+        videoElement.currentTime = sub.start;
+        videoElement.play();
+      }
+    }
+  };
+
   // Global Event Delegation (Clicks)
   document.body.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
@@ -508,7 +591,7 @@ export function initUI() {
     if (target.classList.contains('token')) {
       const token = target.getAttribute('data-token');
       if (token) {
-        const now = Date.now();
+        const now = timeAuthority.getNow();
         // Instrument Exposure: Selected
         logExposure({
           token,
@@ -518,21 +601,7 @@ export function initUI() {
           interactionType: 'click'
         });
 
-        // Record Review in Memory
-        learningMemory.recordReview(token, now);
-
-        attentionEngine.markTokenReviewed(token);
-        
-        const profile = cognitiveSelectors.getProfile(token, now);
-        const candidates = cognitiveSelectors.getReinforcementCandidates(now);
-        const candidate = candidates.find(c => c.token === token);
-        
-        stateManager.setState({ 
-          selectedToken: token,
-          selectedTokenLearningProfile: profile,
-          selectedTokenReinforcementClass: candidate ? candidate.reinforcementClass : null
-        });
-        updateAttentionTarget();
+        engineLoop.processEvent({ type: 'TOKEN_CLICK', token });
       }
       return;
     }
@@ -550,24 +619,19 @@ export function initUI() {
     if (target.id === 'btn-save-word') {
       const state = stateManager.getState();
       if (state.selectedToken) {
-        const now = Date.now();
-        const newSaved = new Set(state.savedWords);
-        if (newSaved.has(state.selectedToken)) {
-          newSaved.delete(state.selectedToken);
-        } else {
-          newSaved.add(state.selectedToken);
-        }
-        stateManager.setState({ savedWords: newSaved });
-        
-        // Record Save in Memory
-        learningMemory.recordSave(state.selectedToken, now);
+        engineLoop.processEvent({ type: 'TOKEN_SAVE', token: state.selectedToken });
 
         // Efficient DOM update for saved tokens across the app
         document.querySelectorAll(`.token[data-token="${state.selectedToken}"]`).forEach(el => {
-          el.classList.toggle('saved', newSaved.has(state.selectedToken!));
+          el.classList.toggle('saved', stateManager.getState().savedWords.has(state.selectedToken!));
         });
       }
       return;
+    }
+
+    // Unselect token if clicking outside interactive elements
+    if (!target.closest('#focus-panel') && !target.closest('.subtitle-row') && !target.closest('.ui-btn')) {
+      stateManager.setState({ selectedToken: null });
     }
   });
 

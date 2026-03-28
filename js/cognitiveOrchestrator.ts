@@ -59,7 +59,7 @@ export class CognitiveOrchestrator {
 
     // 2. Build Deterministic Review Queue
     const schedulerState = sessionScheduler.getState();
-    const reviewQueue = buildReviewQueue(reviewCandidates, reinforcementCandidates, schedulerState.recentlySurfacedSubtitleId);
+    const reviewQueue = buildReviewQueue(reviewCandidates, reinforcementCandidates, schedulerState.recentlySurfacedSubtitleId, now);
     
     // 3. Determine Proposed Mode
     let proposedMode: CognitiveMode = 'PASSIVE_WATCH';

@@ -19,10 +19,14 @@ export function deriveFamiliarityScore(input: CognitiveDerivationInput, evidence
   evidenceSummary.push("distinctSessionCount unavailable in current schema; treated as 0.");
   evidenceSummary.push("targetExposureCount unavailable in current schema; treated as 0.");
 
-  const score = (encounterCount * 1.0) +
-                (distinctSubtitleCount * 0.75) +
-                (distinctSessionCount * 1.5) +
-                (targetExposureCount * 0.5);
+  // Quantized step math
+  const score = clamp(
+    (encounterCount * 0.1) +
+    (distinctSubtitleCount * 0.05) +
+    (distinctSessionCount * 0.2) +
+    (targetExposureCount * 0.1),
+    0, 1.0
+  );
 
   evidenceSummary.push(`encounterCount=${encounterCount} contributes to familiarityScore=${score.toFixed(2)}.`);
   return score;
@@ -42,9 +46,13 @@ export function deriveSemanticLinkScore(input: CognitiveDerivationInput, evidenc
 
   evidenceSummary.push("selectedCount unavailable in current schema; treated as 0.");
 
-  const score = (reviewCount * 2.0) +
-                (saveCount * 3.0) +
-                (selectedCount * 1.5);
+  // Quantized step math
+  const score = clamp(
+    (reviewCount * 0.2) +
+    (saveCount * 0.3) +
+    (selectedCount * 0.1),
+    0, 1.0
+  );
 
   evidenceSummary.push(`reviewCount=${reviewCount}, saveCount=${saveCount} contribute to semanticLinkScore=${score.toFixed(2)}.`);
   return score;
@@ -62,7 +70,7 @@ export function deriveDecayRisk(input: CognitiveDerivationInput, baseState: Toke
   }
 
   const elapsedMs = input.now - input.memoryRecord.lastSeenAt;
-  const elapsedDays = elapsedMs / MS_PER_DAY;
+  const elapsedDays = Math.floor(elapsedMs / MS_PER_DAY); // Step function by day
 
   let windowDays = 1;
   switch (baseState) {
@@ -74,8 +82,14 @@ export function deriveDecayRisk(input: CognitiveDerivationInput, baseState: Toke
     default: windowDays = 1; break;
   }
 
-  const risk = Math.min(1.0, elapsedDays / windowDays);
-  evidenceSummary.push(`Elapsed ${elapsedDays.toFixed(1)} days against ${windowDays}-day window yields decayRisk=${risk.toFixed(2)}.`);
+  // Step-based risk
+  let risk = 0;
+  if (elapsedDays >= windowDays * 2) risk = 1.0;
+  else if (elapsedDays >= windowDays) risk = 0.8;
+  else if (elapsedDays >= windowDays * 0.5) risk = 0.4;
+  else if (elapsedDays >= windowDays * 0.25) risk = 0.1;
+
+  evidenceSummary.push(`Elapsed ${elapsedDays} days against ${windowDays}-day window yields decayRisk=${risk.toFixed(2)}.`);
   return risk;
 }
 
@@ -84,24 +98,31 @@ function clamp(val: number, min: number, max: number) {
 }
 
 export function deriveConsolidationMomentum(familiarityScore: number, semanticLinkScore: number, state: TokenLearningState, evidenceSummary: string[]): number {
-  let threshold = 1;
+  let threshold = 1.0;
   switch (state) {
-    case 'UNSEEN': threshold = 3; break;
-    case 'SEEN': threshold = 3; break;
-    case 'FAMILIAR': threshold = 5; break;
-    case 'SEMANTICALLY_LINKED': threshold = 7; break;
-    case 'RECALLABLE': threshold = 10; break;
-    case 'STABLE': threshold = 15; break;
+    case 'UNSEEN': threshold = 0.2; break;
+    case 'SEEN': threshold = 0.2; break;
+    case 'FAMILIAR': threshold = 0.4; break;
+    case 'SEMANTICALLY_LINKED': threshold = 0.6; break;
+    case 'RECALLABLE': threshold = 0.8; break;
+    case 'STABLE': threshold = 1.0; break;
     case 'AUTOMATIC': 
-      threshold = 15; 
-      evidenceSummary.push("AUTOMATIC is terminal; clamping threshold to 15.");
+      threshold = 1.0; 
+      evidenceSummary.push("AUTOMATIC is terminal; clamping threshold to 1.0.");
       break;
-    case 'FRAGILE': threshold = 10; break;
-    case 'LOST': threshold = 5; break;
+    case 'FRAGILE': threshold = 0.8; break;
+    case 'LOST': threshold = 0.4; break;
   }
 
-  const momentum = clamp((familiarityScore * 0.4 + semanticLinkScore * 0.6) / threshold, 0, 1);
-  evidenceSummary.push(`Momentum calculated as ${momentum.toFixed(2)} against threshold ${threshold}.`);
+  // Step-based momentum
+  const rawScore = (familiarityScore * 0.4) + (semanticLinkScore * 0.6);
+  let momentum = 0;
+  if (rawScore >= threshold) momentum = 1.0;
+  else if (rawScore >= threshold * 0.75) momentum = 0.75;
+  else if (rawScore >= threshold * 0.5) momentum = 0.5;
+  else if (rawScore >= threshold * 0.25) momentum = 0.25;
+
+  evidenceSummary.push(`Momentum calculated as ${momentum.toFixed(2)} against threshold ${threshold.toFixed(2)}.`);
   return momentum;
 }
 
@@ -220,6 +241,8 @@ export function deriveProfile(input: CognitiveDerivationInput): TokenLearningPro
     familiarityScore,
     semanticLinkScore,
     evidenceSummary,
+    lastSeenAt: input.memoryRecord?.lastSeenAt ?? null,
+    lastReviewedAt: input.memoryRecord?.lastReviewedAt ?? null,
     profileVersion: 1
   };
 }

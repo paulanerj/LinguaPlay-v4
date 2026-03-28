@@ -11,6 +11,8 @@ import { cognitiveInference } from './cognitiveInference.ts';
 import { reinforcementPlanner } from './reinforcementPlanner.ts';
 import { inferenceDebug } from './inferenceDebug.ts';
 import { formatOrchestrationDecision, formatReviewQueuePreview } from './orchestrationDebug.ts';
+import { formatGuidedControlDecision } from './controlDebug.ts';
+import { timeAuthority } from './timeAuthority.ts';
 
 let debugOverlay: HTMLElement | null = null;
 let cognitiveDebugOverlay: HTMLElement | null = null;
@@ -122,17 +124,21 @@ function updateCognitiveDebugOverlay() {
   }
 
   if (state.selectedToken) {
-    const now = Date.now();
+    const now = timeAuthority.getNow();
     const profile = cognitiveInference.deriveTokenProfile(state.selectedToken, now);
     content += inferenceDebug.formatProfile(profile);
   } else {
     content += `<div class="opacity-50 mb-4">Select a token to view its cognitive profile.</div>`;
   }
 
-  const now = Date.now();
+  const now = timeAuthority.getNow();
   const allProfiles = cognitiveInference.deriveAllProfiles(now);
   const candidates = reinforcementPlanner.planReinforcement(allProfiles);
   
+  content += `<div class="mt-4 border-t border-white/10 pt-4">`;
+  content += formatGuidedControlDecision(state.activeGuidedControlDecision || null);
+  content += `</div>`;
+
   content += `<div class="mt-4 border-t border-white/10 pt-4">`;
   content += inferenceDebug.formatCandidates(candidates.slice(0, 10)); // Top 10
   content += `</div>`;

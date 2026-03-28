@@ -24,6 +24,8 @@ export interface ReviewQueueEntry {
   priorityScore: number;
   rescueTokenCount: number;
   reactivateTokenCount: number;
+  dueTokensCount: number;
+  nextReviewAt: number;
   maxDecayRisk: number;
   rationale: string[];
 }

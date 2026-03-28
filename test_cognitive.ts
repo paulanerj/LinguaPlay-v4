@@ -1,9 +1,10 @@
 import { learningMemory } from './js/learningMemory.ts';
 import { cognitiveInference } from './js/cognitiveInference.ts';
 import { reinforcementPlanner } from './js/reinforcementPlanner.ts';
+import { timeAuthority } from './js/timeAuthority.ts';
 
 // Mock some memory records
-const now = Date.now();
+const now = timeAuthority.getNow();
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 learningMemory.recordEncounter('你好', now - 2 * MS_PER_DAY);

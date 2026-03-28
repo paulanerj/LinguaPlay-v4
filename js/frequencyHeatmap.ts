@@ -7,6 +7,7 @@
  */
 
 import { dictionaryEngine } from './dictionaryEngine.ts';
+import { learningMemory } from './learningMemory.ts';
 
 export type HeatLevel = 'known' | 'common' | 'mid' | 'rare' | 'unknown';
 
@@ -58,6 +59,15 @@ export function classifyToken(token: string, savedWords: Set<string>): HeatLevel
 }
 
 export function getHeatClass(token: string, savedWords: Set<string>): string {
+  const record = learningMemory.getRecord(token);
+  if (savedWords.has(token)) return 'heat-known';
+  if (record) {
+    if (record.reviewCount > 2) return 'heat-common';
+    if (record.reviewCount > 0) return 'heat-mid';
+    if (record.encounterCount > 2) return 'heat-rare';
+    if (record.encounterCount > 0) return 'heat-unknown';
+  }
+  
   const level = classifyToken(token, savedWords);
   return level ? `heat-${level}` : '';
 }

@@ -6,6 +6,7 @@ import { cognitiveSelectors } from './js/cognitiveSelectors.ts';
 import { parseSRT } from './js/subtitleParser.ts';
 import { tokenTrie } from './js/tokenTrie.ts';
 import { segmentationPostProcessor } from './js/segmentationPostProcessor.ts';
+import { timeAuthority } from './js/timeAuthority.ts';
 
 // Mock localStorage for Node.js
 if (typeof global !== 'undefined' && !global.localStorage) {
@@ -64,7 +65,7 @@ async function runVerification() {
 
   console.log("\\n=== PART D: OVERRIDE EXPLAINABILITY PROOF ===");
   
-  const now = Date.now();
+  const now = timeAuthority.getNow();
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
   
   // Setup memory for tokens

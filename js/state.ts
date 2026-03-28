@@ -13,9 +13,18 @@ import { SubtitleCognitivePriority } from './subtitleCognitivePriority.ts';
 import { ReviewCandidate } from './reviewPlanner.ts';
 import { CognitiveMode, CognitiveFocusStrategy, OrchestrationDecision, SessionCognitiveSnapshot, ReviewFlowState, ReviewQueueEntry } from './orchestrationTypes.ts';
 
+import { GuidedControlDecision, GuidedControlMode, SessionPhase, ReviewEntryState, ReviewProgressState, ControlHistorySnapshot } from './controlTypes.ts';
+
 export enum LexiconMode {
   FULL = 'FULL',
   FALLBACK = 'FALLBACK'
+}
+
+export interface SessionMetrics {
+  tokensSeen: number;
+  tokensReviewed: number;
+  rescueTokensResolved: number;
+  sessionStartTime: number;
 }
 
 export enum EncounterPolicy {
@@ -59,6 +68,18 @@ export interface AppState {
   sessionCognitiveSnapshot?: SessionCognitiveSnapshot | null;
   reviewFlowState?: ReviewFlowState;
   reviewQueuePreview?: ReviewQueueEntry[];
+
+  // Stage-4 Guided Control Fields
+  activeGuidedControlDecision?: GuidedControlDecision | null;
+  activeGuidedControlMode?: GuidedControlMode;
+  activeSessionPhase?: SessionPhase;
+  reviewEntryState?: ReviewEntryState;
+  reviewProgressState?: ReviewProgressState;
+  proposedReviewSubtitleId?: string | number | null;
+  reviewQueueAccepted?: boolean;
+  controlHistory?: ControlHistorySnapshot;
+  lastAttentionTarget?: string | null;
+  sessionMetrics?: SessionMetrics;
 }
 
 class StateManager {
@@ -74,7 +95,20 @@ class StateManager {
     encounterPolicy: EncounterPolicy.PER_ACTIVATION,
     savedWords: new Set(),
     pedagogicalDemo: true,
-    cognitiveDebugEnabled: false
+    cognitiveDebugEnabled: false,
+    controlHistory: {
+      lastDeclinedReviewPressure: null,
+      lastDeclinedTimestamp: null,
+      consecutiveDowngrades: 0,
+      lastProposedReviewSubtitleId: null
+    },
+    lastAttentionTarget: null,
+    sessionMetrics: {
+      tokensSeen: 0,
+      tokensReviewed: 0,
+      rescueTokensResolved: 0,
+      sessionStartTime: 0 // Will be set on first play
+    }
   };
 
   private listeners: Set<(state: AppState) => void> = new Set();

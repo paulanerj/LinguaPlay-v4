@@ -127,7 +127,7 @@ video {
 }
 
 .transcript-row.active {
-  border-left-color: var(--accent-primary);
+  border-left-color: var(--accent-primary) !important;
   background: rgba(56, 189, 248, 0.1);
 }
 
@@ -148,12 +148,13 @@ video {
   padding: 0 2px;
   border-radius: 3px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.15s ease-out;
 }
 
 .token:hover {
   background: var(--token-hover);
   color: white;
+  transform: scale(1.05);
 }
 
 .token.saved {
@@ -183,6 +184,13 @@ video {
   outline: 2px solid rgba(255, 255, 255, 0.3);
   outline-offset: 1px;
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+.token.selected {
+  background: var(--token-active);
+  color: white !important;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* Quick Preview Tooltip */
