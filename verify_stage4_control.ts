@@ -14,21 +14,29 @@ const mockOrchestrationDecision: OrchestrationDecision = {
   focusStrategy: 'FOLLOW_BASELINE',
   reviewPressureScore: 2.0,
   shouldSurfaceReviewQueue: false,
+  shouldSurfaceRescuePriority: false,
+  topReviewSubtitleId: null,
   advisedTarget: null,
   rationale: ['Test rationale']
 };
 
 const mockSnapshot: SessionCognitiveSnapshot = {
-  timestamp: 1000,
   activeSubtitleId: 1,
-  orchestrationDecision: mockOrchestrationDecision,
-  topReinforcementCandidates: [],
-  reviewQueuePreview: []
+  activeMode: 'PASSIVE_WATCH',
+  rescueTokenCount: 0,
+  reactivateTokenCount: 0,
+  introduceTokenCount: 0,
+  reinforceTokenCount: 0,
+  ignoredTokenCount: 0,
+  topAdvisedTarget: null,
+  reviewQueueLength: 0,
+  reviewPressureScore: 2.0,
+  rationale: ['Test rationale']
 };
 
 const mockQueue: ReviewQueueEntry[] = [
-  { subtitleId: 1, priorityScore: 5.0, rescueTokens: ['a'], reinforcementCandidates: [] },
-  { subtitleId: 2, priorityScore: 4.0, rescueTokens: [], reinforcementCandidates: [] }
+  { subtitleId: 1, priorityScore: 5.0, rescueTokenCount: 1, reactivateTokenCount: 0, dueTokensCount: 1, nextReviewAt: 0, maxDecayRisk: 0.8, targetTokens: ['a'], rationale: [] },
+  { subtitleId: 2, priorityScore: 4.0, rescueTokenCount: 0, reactivateTokenCount: 0, dueTokensCount: 0, nextReviewAt: 0, maxDecayRisk: 0.5, targetTokens: [], rationale: [] }
 ];
 
 const mockHistory: ControlHistorySnapshot = {

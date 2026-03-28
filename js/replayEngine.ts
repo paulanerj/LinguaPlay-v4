@@ -8,7 +8,7 @@ import { cognitiveOrchestrator } from './cognitiveOrchestrator.ts';
 import { guidedLearningController } from './guidedLearningController.ts';
 
 export type ReplayEvent = 
-  | { type: 'SUBTITLE_TRANSITION', timestamp: number, subtitleId: string | number }
+  | { type: 'SUBTITLE_TRANSITION', timestamp: number, subtitleId: number | null }
   | { type: 'TOKEN_CLICK', timestamp: number, token: string }
   | { type: 'TOKEN_SAVE', timestamp: number, token: string };
 
@@ -98,7 +98,7 @@ export class ReplayEngine {
         state.activeSubtitleId,
         tokens,
         baselineTarget,
-        advice.targetToken,
+        advice.advisedTarget,
         allProfiles,
         reinforcementCandidates,
         priority,
@@ -107,13 +107,17 @@ export class ReplayEngine {
       );
 
       const sessionSnapshot = {
-        totalTokensEncountered: 0,
-        totalTokensReviewed: 0,
-        totalTokensSaved: 0,
-        averageConfidence: 0,
-        highRiskTokens: 0,
-        rescueTokens: 0,
-        reactivateTokens: 0
+        activeSubtitleId: state.activeSubtitleId,
+        activeMode: 'PASSIVE_WATCH' as const,
+        rescueTokenCount: 0,
+        reactivateTokenCount: 0,
+        introduceTokenCount: 0,
+        reinforceTokenCount: 0,
+        ignoredTokenCount: 0,
+        topAdvisedTarget: null,
+        reviewQueueLength: 0,
+        reviewPressureScore: 0,
+        rationale: []
       };
 
       const controlDecision = guidedLearningController.deriveControlDecision(
@@ -121,7 +125,7 @@ export class ReplayEngine {
         orchestrationDecision,
         sessionSnapshot,
         [],
-        'HIDDEN',
+        'NOT_AVAILABLE',
         'IDLE',
         state.controlHistory!,
         event.timestamp

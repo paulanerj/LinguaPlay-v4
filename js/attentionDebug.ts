@@ -133,7 +133,7 @@ function updateCognitiveDebugOverlay() {
 
   const now = timeAuthority.getNow();
   const allProfiles = cognitiveInference.deriveAllProfiles(now);
-  const candidates = reinforcementPlanner.planReinforcement(allProfiles);
+  const candidates = reinforcementPlanner.planReinforcement(now, allProfiles);
   
   content += `<div class="mt-4 border-t border-white/10 pt-4">`;
   content += formatGuidedControlDecision(state.activeGuidedControlDecision || null);

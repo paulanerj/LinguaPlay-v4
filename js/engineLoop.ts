@@ -12,7 +12,7 @@ import { sessionScheduler } from './sessionScheduler.ts';
 import { dictionaryEngine } from './dictionaryEngine.ts';
 
 export type EngineEvent = 
-  | { type: 'SUBTITLE_TRANSITION', subtitleId: string | number | null, tokens: string[] }
+  | { type: 'SUBTITLE_TRANSITION', subtitleId: number | null, tokens: string[] }
   | { type: 'TOKEN_CLICK', token: string }
   | { type: 'TOKEN_SAVE', token: string }
   | { type: 'REVIEW_ACCEPT' }

@@ -28,6 +28,7 @@ export function initUI() {
   const btnLoadVideo = document.getElementById('btn-load-video')!;
   const btnLoadSRT = document.getElementById('btn-load-srt')!;
   const btnDemo = document.getElementById('btn-demo')!;
+  const btnSlowMode = document.getElementById('btn-slow-mode');
   const inputVideo = document.getElementById('input-video') as HTMLInputElement;
   const inputSRT = document.getElementById('input-srt') as HTMLInputElement;
 
@@ -41,6 +42,118 @@ export function initUI() {
   let videoFile: File | null = null;
   let srtFile: File | null = null;
   let currentVideoUrl: string | null = null;
+  let currentSpeed = 1.0;
+
+  if (btnSlowMode) {
+    btnSlowMode.addEventListener('click', () => {
+      if (currentSpeed === 1.0) currentSpeed = 0.75;
+      else if (currentSpeed === 0.75) currentSpeed = 0.5;
+      else currentSpeed = 1.0;
+      
+      video.playbackRate = currentSpeed;
+      btnSlowMode.textContent = `Speed: ${currentSpeed}x`;
+    });
+  }
+
+  // Record & Compare MVP State
+  let mediaRecorder: MediaRecorder | null = null;
+  let audioChunks: Blob[] = [];
+  let myAudioBlob: Blob | null = null;
+  let myAudioUrl: string | null = null;
+  let isRecording = false;
+
+  (window as any).playSourceAudio = () => {
+    const state = stateManager.getState();
+    if (state.activeSubtitleId !== null) {
+      const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+      if (sub && video) {
+        video.currentTime = sub.start;
+        video.play();
+        const checkEnd = () => {
+          if (video.currentTime >= sub.end) {
+            video.pause();
+            video.removeEventListener('timeupdate', checkEnd);
+          }
+        };
+        video.addEventListener('timeupdate', checkEnd);
+      }
+    }
+  };
+
+  (window as any).toggleRecording = async () => {
+    const btnRecord = document.getElementById('btn-record-audio');
+    const status = document.getElementById('recording-status');
+    const btnPlayMine = document.getElementById('btn-play-mine');
+    const btnCompare = document.getElementById('btn-compare-again');
+
+    if (isRecording) {
+      mediaRecorder?.stop();
+      isRecording = false;
+      if (btnRecord) {
+        btnRecord.textContent = 'Record';
+        btnRecord.classList.remove('animate-pulse');
+      }
+      if (status) status.textContent = 'Recording saved.';
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        myAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        if (myAudioUrl) URL.revokeObjectURL(myAudioUrl);
+        myAudioUrl = URL.createObjectURL(myAudioBlob);
+        
+        if (btnPlayMine) btnPlayMine.classList.remove('hidden');
+        if (btnCompare) btnCompare.classList.remove('hidden');
+        
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      isRecording = true;
+      
+      if (btnRecord) {
+        btnRecord.textContent = 'Stop';
+        btnRecord.classList.add('animate-pulse');
+      }
+      if (status) status.textContent = 'Recording... Speak now.';
+      if (btnPlayMine) btnPlayMine.classList.add('hidden');
+      if (btnCompare) btnCompare.classList.add('hidden');
+
+    } catch (err) {
+      console.error("Microphone access denied", err);
+      if (status) status.textContent = 'Microphone access denied.';
+    }
+  };
+
+  (window as any).playMyAudio = () => {
+    if (myAudioUrl) {
+      const audio = new Audio(myAudioUrl);
+      audio.play();
+    }
+  };
+
+  (window as any).compareAudio = () => {
+    (window as any).playSourceAudio();
+    const state = stateManager.getState();
+    if (state.activeSubtitleId !== null) {
+      const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+      if (sub) {
+        const duration = (sub.end - sub.start) * 1000;
+        setTimeout(() => {
+          (window as any).playMyAudio();
+        }, duration + 500);
+      }
+    }
+  };
 
   function updateStatus() {
     if (!videoFile && !srtFile && !transcriptRendered) {
@@ -137,7 +250,7 @@ export function initUI() {
     }
   });
 
-  btnDemo.addEventListener('click', () => {
+  btnDemo.addEventListener('click', async () => {
     // Revoke previous URL if it exists
     if (currentVideoUrl) {
       URL.revokeObjectURL(currentVideoUrl);
@@ -148,25 +261,29 @@ export function initUI() {
     srtFile = null;
     video.src = "https://www.w3schools.com/html/mov_bbb.mp4";
     
-    const sampleSRT = `
-1
-00:00:01,000 --> 00:00:04,000
-你好，欢迎来到LinguaPlay。
+    try {
+      // Load demo lexicon first
+      await dictionaryEngine.loadLargeLexicon('/data/demo_lexicon.json');
 
-2
-00:00:05,000 --> 00:00:08,000
-我们一起学习中文。
-    `;
-    const subs = parseSRT(sampleSRT);
-    resetContentState();
-    stateManager.setState({ subtitles: subs });
-    
-    // Compute review candidates
-    const now = timeAuthority.getNow();
-    const reviewCandidates = cognitiveSelectors.getReviewCandidates(subs, now);
-    stateManager.setState({ topReviewCandidates: reviewCandidates });
-    
-    updateStatus();
+      // Load demo subtitles
+      const response = await fetch('/data/demo_subtitles.srt');
+      if (!response.ok) throw new Error("Failed to load demo subtitles");
+      const srtText = await response.text();
+      
+      const subs = parseSRT(srtText);
+      resetContentState();
+      stateManager.setState({ subtitles: subs });
+      
+      // Compute review candidates
+      const now = timeAuthority.getNow();
+      const reviewCandidates = cognitiveSelectors.getReviewCandidates(subs, now);
+      stateManager.setState({ topReviewCandidates: reviewCandidates });
+      
+      updateStatus();
+    } catch (err) {
+      console.error("Demo Load Failed:", err);
+      statusLine.textContent = 'demo load failed';
+    }
   });
 
   // Video Time Update
@@ -440,6 +557,26 @@ export function initUI() {
             </div>
           </div>
 
+          <!-- Record & Compare MVP -->
+          <div class="mb-6 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+            <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Pronunciation Practice (MVP)</h4>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-bold transition-colors" onclick="window.playSourceAudio()">
+                Listen
+              </button>
+              <button id="btn-record-audio" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded font-bold transition-colors" onclick="window.toggleRecording()">
+                Record
+              </button>
+              <button id="btn-play-mine" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded font-bold transition-colors hidden" onclick="window.playMyAudio()">
+                Play Mine
+              </button>
+              <button id="btn-compare-again" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded font-bold transition-colors hidden" onclick="window.compareAudio()">
+                Compare Again
+              </button>
+            </div>
+            <div id="recording-status" class="text-[10px] mt-2 opacity-60 italic"></div>
+          </div>
+
           <div>
             <h3 class="text-lg font-semibold mb-3 border-b border-slate-700 pb-1">Example Sandbox</h3>
             <div class="flex flex-col gap-2">
@@ -452,7 +589,7 @@ export function initUI() {
         const decision = state.activeGuidedControlDecision;
         
         if (decision && decision.shouldSurfaceReviewEntry && decision.proposedReviewSubtitleId !== null) {
-          const entry = state.reviewQueuePreview?.entries.find(e => e.subtitleId === decision.proposedReviewSubtitleId);
+          const entry = state.reviewQueuePreview?.find(e => e.subtitleId === decision.proposedReviewSubtitleId);
           const dueCount = entry?.dueTokensCount || entry?.targetTokens.length || 0;
           const topTokens = entry?.targetTokens.slice(0, 3).join(', ') || '';
           
@@ -494,7 +631,7 @@ export function initUI() {
             </div>
           `;
         } else if (decision && decision.reviewProgressState === 'ROW_ACTIVE') {
-          const entry = state.reviewQueuePreview?.entries.find(e => e.subtitleId === decision.proposedReviewSubtitleId);
+          const entry = state.reviewQueuePreview?.find(e => e.subtitleId === decision.proposedReviewSubtitleId);
           const targetTokens = entry?.targetTokens || [];
           const tokenHtml = targetTokens.map(t => `<span class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-accent-primary font-bold">${t}</span>`).join(' ');
           
@@ -576,9 +713,9 @@ export function initUI() {
     const state = stateManager.getState();
     if (state.activeSubtitleId !== null) {
       const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
-      if (sub && videoElement) {
-        videoElement.currentTime = sub.start;
-        videoElement.play();
+      if (sub && video) {
+        video.currentTime = sub.start;
+        video.play();
       }
     }
   };

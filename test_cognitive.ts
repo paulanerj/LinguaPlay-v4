@@ -35,6 +35,6 @@ const profiles = cognitiveInference.deriveAllProfiles(now);
 console.log("PROFILES:");
 console.log(JSON.stringify(profiles, null, 2));
 
-const candidates = reinforcementPlanner.planReinforcement(profiles);
+const candidates = reinforcementPlanner.planReinforcement(now, profiles);
 console.log("CANDIDATES:");
 console.log(JSON.stringify(candidates, null, 2));

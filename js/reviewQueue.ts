@@ -36,6 +36,7 @@ export function buildReviewQueue(
       dueTokensCount,
       nextReviewAt: minNextReviewAt,
       maxDecayRisk: candidate.maxDecayRisk,
+      targetTokens: candidate.topTokens,
       rationale: [...candidate.rationale]
     });
   }

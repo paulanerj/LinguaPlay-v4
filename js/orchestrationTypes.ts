@@ -27,6 +27,7 @@ export interface ReviewQueueEntry {
   dueTokensCount: number;
   nextReviewAt: number;
   maxDecayRisk: number;
+  targetTokens: string[];
   rationale: string[];
 }
 

@@ -19,14 +19,14 @@ function runAudit() {
   const advisedTarget = '喜欢';
 
   const allProfiles: TokenLearningProfile[] = [
-    { token: '我', inferredState: 'STABLE', profileVersion: 1, confidence: 0.9, decayRisk: 0.1, consolidationMomentum: 0.8, familiarityScore: 0.9, semanticLinkScore: 0, evidenceSummary: [] },
-    { token: '喜欢', inferredState: 'LOST', profileVersion: 1, confidence: 0.8, decayRisk: 0.9, consolidationMomentum: 0.1, familiarityScore: 0.2, semanticLinkScore: 0, evidenceSummary: [] },
-    { token: '学习', inferredState: 'FAMILIAR', profileVersion: 1, confidence: 0.5, decayRisk: 0.5, consolidationMomentum: 0.5, familiarityScore: 0.5, semanticLinkScore: 0, evidenceSummary: [] }
+    { token: '我', inferredState: 'STABLE', profileVersion: 1, confidence: 0.9, decayRisk: 0.1, consolidationMomentum: 0.8, familiarityScore: 0.9, semanticLinkScore: 0, evidenceSummary: [], lastSeenAt: 0, lastReviewedAt: 0 },
+    { token: '喜欢', inferredState: 'LOST', profileVersion: 1, confidence: 0.8, decayRisk: 0.9, consolidationMomentum: 0.1, familiarityScore: 0.2, semanticLinkScore: 0, evidenceSummary: [], lastSeenAt: 0, lastReviewedAt: 0 },
+    { token: '学习', inferredState: 'FAMILIAR', profileVersion: 1, confidence: 0.5, decayRisk: 0.5, consolidationMomentum: 0.5, familiarityScore: 0.5, semanticLinkScore: 0, evidenceSummary: [], lastSeenAt: 0, lastReviewedAt: 0 }
   ];
 
   const reinforcementCandidates: ReinforcementCandidate[] = [
-    { token: '喜欢', reinforcementClass: 'RESCUE', profile: allProfiles[1], priorityScore: 10 },
-    { token: '学习', reinforcementClass: 'REINFORCE', profile: allProfiles[2], priorityScore: 5 }
+    { token: '喜欢', reinforcementClass: 'RESCUE', profile: allProfiles[1], priorityScore: 10, nextReviewAt: 0 },
+    { token: '学习', reinforcementClass: 'REINFORCE', profile: allProfiles[2], priorityScore: 5, nextReviewAt: 0 }
   ];
 
   const subtitlePriority: SubtitleCognitivePriority = {

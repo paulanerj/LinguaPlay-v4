@@ -95,7 +95,7 @@ export class DeterminismHarness {
       activeSub.id,
       tokens,
       baselineTarget,
-      advice.targetToken,
+      advice.advisedTarget,
       allProfiles,
       reinforcementCandidates,
       priority,
@@ -104,13 +104,17 @@ export class DeterminismHarness {
     );
 
     const sessionSnapshot = {
-      totalTokensEncountered: 0,
-      totalTokensReviewed: 0,
-      totalTokensSaved: 0,
-      averageConfidence: 0,
-      highRiskTokens: 0,
-      rescueTokens: 0,
-      reactivateTokens: 0
+      activeSubtitleId: activeSub.id,
+      activeMode: 'PASSIVE_WATCH' as const,
+      rescueTokenCount: 0,
+      reactivateTokenCount: 0,
+      introduceTokenCount: 0,
+      reinforceTokenCount: 0,
+      ignoredTokenCount: 0,
+      topAdvisedTarget: null,
+      reviewQueueLength: 0,
+      reviewPressureScore: 0,
+      rationale: []
     };
 
     const reviewQueue: any[] = [];
@@ -120,7 +124,7 @@ export class DeterminismHarness {
       orchestrationDecision,
       sessionSnapshot,
       reviewQueue,
-      'HIDDEN',
+      'NOT_AVAILABLE',
       'IDLE',
       {
         lastDeclinedReviewPressure: null,

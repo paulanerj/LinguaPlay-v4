@@ -1,0 +1,1703 @@
+{
+  "你": {
+    "pinyin": "nǐ",
+    "english": "you",
+    "pos": "pronoun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "你好吗？",
+        "pinyin": "nǐ hǎo ma?",
+        "en": "How are you?"
+      }
+    ]
+  },
+  "好": {
+    "pinyin": "hǎo",
+    "english": "good",
+    "pos": "adjective",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "这是一个好主意。",
+        "pinyin": "zhè shì yí ge hǎo zhǔ yì.",
+        "en": "This is a good idea."
+      }
+    ]
+  },
+  "好久不见": {
+    "pinyin": "hǎo jiǔ bù jiàn",
+    "english": "long time no see",
+    "pos": "phrase",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "好久不见，你最近怎么样？",
+        "pinyin": "hǎo jiǔ bù jiàn, nǐ zuì jìn zěn me yàng?",
+        "en": "Long time no see, how have you been recently?"
+      }
+    ]
+  },
+  "欢迎": {
+    "pinyin": "huān yíng",
+    "english": "welcome",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "欢迎来到北京。",
+        "pinyin": "huān yíng lái dào Běi jīng.",
+        "en": "Welcome to Beijing."
+      }
+    ]
+  },
+  "来到": {
+    "pinyin": "lái dào",
+    "english": "arrive at",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我们来到了公园。",
+        "pinyin": "wǒ men lái dào le gōng yuán.",
+        "en": "We arrived at the park."
+      }
+    ]
+  },
+  "我": {
+    "pinyin": "wǒ",
+    "english": "I, me",
+    "pos": "pronoun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我是学生。",
+        "pinyin": "wǒ shì xué sheng.",
+        "en": "I am a student."
+      }
+    ]
+  },
+  "的": {
+    "pinyin": "de",
+    "english": "possessive particle",
+    "pos": "particle",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "这是我的书。",
+        "pinyin": "zhè shì wǒ de shū.",
+        "en": "This is my book."
+      }
+    ]
+  },
+  "新": {
+    "pinyin": "xīn",
+    "english": "new",
+    "pos": "adjective",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我买了一辆新车。",
+        "pinyin": "wǒ mǎi le yí liàng xīn chē.",
+        "en": "I bought a new car."
+      }
+    ]
+  },
+  "家": {
+    "pinyin": "jiā",
+    "english": "home, family",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我家有三口人。",
+        "pinyin": "wǒ jiā yǒu sān kǒu rén.",
+        "en": "There are three people in my family."
+      }
+    ]
+  },
+  "哇": {
+    "pinyin": "wa",
+    "english": "wow",
+    "pos": "interjection",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "哇，太漂亮了！",
+        "pinyin": "wa, tài piào liang le!",
+        "en": "Wow, so beautiful!"
+      }
+    ]
+  },
+  "真": {
+    "pinyin": "zhēn",
+    "english": "really",
+    "pos": "adverb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "今天天气真好。",
+        "pinyin": "jīn tiān tiān qì zhēn hǎo.",
+        "en": "The weather is really good today."
+      }
+    ]
+  },
+  "漂亮": {
+    "pinyin": "piào liang",
+    "english": "pretty, beautiful",
+    "pos": "adjective",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "这件衣服很漂亮。",
+        "pinyin": "zhè jiàn yī fu hěn piào liang.",
+        "en": "This piece of clothing is very pretty."
+      }
+    ]
+  },
+  "很": {
+    "pinyin": "hěn",
+    "english": "very",
+    "pos": "adverb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我很高兴。",
+        "pinyin": "wǒ hěn gāo xìng.",
+        "en": "I am very happy."
+      }
+    ]
+  },
+  "大": {
+    "pinyin": "dà",
+    "english": "big",
+    "pos": "adjective",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "这个苹果很大。",
+        "pinyin": "zhè ge píng guǒ hěn dà.",
+        "en": "This apple is very big."
+      }
+    ]
+  },
+  "谢谢": {
+    "pinyin": "xiè xie",
+    "english": "thank you",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "谢谢你的帮助。",
+        "pinyin": "xiè xie nǐ de bāng zhù.",
+        "en": "Thank you for your help."
+      }
+    ]
+  },
+  "请": {
+    "pinyin": "qǐng",
+    "english": "please",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "请给我一杯水。",
+        "pinyin": "qǐng gěi wǒ yì bēi shuǐ.",
+        "en": "Please give me a glass of water."
+      }
+    ]
+  },
+  "进": {
+    "pinyin": "jìn",
+    "english": "enter",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "请进房间。",
+        "pinyin": "qǐng jìn fáng jiān.",
+        "en": "Please enter the room."
+      }
+    ]
+  },
+  "坐": {
+    "pinyin": "zuò",
+    "english": "sit",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "请坐在这里。",
+        "pinyin": "qǐng zuò zài zhè lǐ.",
+        "en": "Please sit here."
+      }
+    ]
+  },
+  "想": {
+    "pinyin": "xiǎng",
+    "english": "want to, think",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我想去中国。",
+        "pinyin": "wǒ xiǎng qù Zhōng guó.",
+        "en": "I want to go to China."
+      }
+    ]
+  },
+  "喝": {
+    "pinyin": "hē",
+    "english": "drink",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我喜欢喝茶。",
+        "pinyin": "wǒ xǐ huan hē chá.",
+        "en": "I like to drink tea."
+      }
+    ]
+  },
+  "点": {
+    "pinyin": "diǎn",
+    "english": "a little, order",
+    "pos": "measure word",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我想点菜。",
+        "pinyin": "wǒ xiǎng diǎn cài.",
+        "en": "I want to order food."
+      }
+    ]
+  },
+  "什么": {
+    "pinyin": "shén me",
+    "english": "what",
+    "pos": "pronoun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "这是什么？",
+        "pinyin": "zhè shì shén me?",
+        "en": "What is this?"
+      }
+    ]
+  },
+  "给": {
+    "pinyin": "gěi",
+    "english": "give",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "请给我一本书。",
+        "pinyin": "qǐng gěi wǒ yì běn shū.",
+        "en": "Please give me a book."
+      }
+    ]
+  },
+  "一杯": {
+    "pinyin": "yì bēi",
+    "english": "a cup of",
+    "pos": "measure word",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我要一杯咖啡。",
+        "pinyin": "wǒ yào yì bēi kā fēi.",
+        "en": "I want a cup of coffee."
+      }
+    ]
+  },
+  "水": {
+    "pinyin": "shuǐ",
+    "english": "water",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "多喝水对身体好。",
+        "pinyin": "duō hē shuǐ duì shēn tǐ hǎo.",
+        "en": "Drinking more water is good for your health."
+      }
+    ]
+  },
+  "吧": {
+    "pinyin": "ba",
+    "english": "suggestion particle",
+    "pos": "particle",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我们走吧。",
+        "pinyin": "wǒ men zǒu ba.",
+        "en": "Let's go."
+      }
+    ]
+  },
+  "好的": {
+    "pinyin": "hǎo de",
+    "english": "okay",
+    "pos": "phrase",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "好的，没问题。",
+        "pinyin": "hǎo de, méi wèn tí.",
+        "en": "Okay, no problem."
+      }
+    ]
+  },
+  "觉得": {
+    "pinyin": "jué de",
+    "english": "feel, think",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我觉得有点冷。",
+        "pinyin": "wǒ jué de yǒu diǎn lěng.",
+        "en": "I feel a bit cold."
+      }
+    ]
+  },
+  "这个": {
+    "pinyin": "zhè ge",
+    "english": "this",
+    "pos": "pronoun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "这个很好吃。",
+        "pinyin": "zhè ge hěn hǎo chī.",
+        "en": "This is very delicious."
+      }
+    ]
+  },
+  "小区": {
+    "pinyin": "xiǎo qū",
+    "english": "neighborhood, community",
+    "pos": "noun",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我们小区很安静。",
+        "pinyin": "wǒ men xiǎo qū hěn ān jìng.",
+        "en": "Our neighborhood is very quiet."
+      }
+    ]
+  },
+  "怎么样": {
+    "pinyin": "zěn me yàng",
+    "english": "how is it",
+    "pos": "pronoun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "你觉得这本书怎么样？",
+        "pinyin": "nǐ jué de zhè běn shū zěn me yàng?",
+        "en": "What do you think of this book?"
+      }
+    ]
+  },
+  "安静": {
+    "pinyin": "ān jìng",
+    "english": "quiet",
+    "pos": "adjective",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "图书馆里很安静。",
+        "pinyin": "tú shū guǎn lǐ hěn ān jìng.",
+        "en": "It is very quiet in the library."
+      }
+    ]
+  },
+  "也": {
+    "pinyin": "yě",
+    "english": "also",
+    "pos": "adverb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我也喜欢看电影。",
+        "pinyin": "wǒ yě xǐ huan kàn diàn yǐng.",
+        "en": "I also like watching movies."
+      }
+    ]
+  },
+  "方便": {
+    "pinyin": "fāng biàn",
+    "english": "convenient",
+    "pos": "adjective",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "坐地铁很方便。",
+        "pinyin": "zuò dì tiě hěn fāng biàn.",
+        "en": "Taking the subway is very convenient."
+      }
+    ]
+  },
+  "对": {
+    "pinyin": "duì",
+    "english": "correct, right",
+    "pos": "adjective",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "你说得对。",
+        "pinyin": "nǐ shuō de duì.",
+        "en": "You are right."
+      }
+    ]
+  },
+  "附近": {
+    "pinyin": "fù jìn",
+    "english": "nearby",
+    "pos": "noun",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我家附近有一个公园。",
+        "pinyin": "wǒ jiā fù jìn yǒu yí ge gōng yuán.",
+        "en": "There is a park near my home."
+      }
+    ]
+  },
+  "有": {
+    "pinyin": "yǒu",
+    "english": "have, there is",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我有一个哥哥。",
+        "pinyin": "wǒ yǒu yí ge gē ge.",
+        "en": "I have an older brother."
+      }
+    ]
+  },
+  "一个": {
+    "pinyin": "yí ge",
+    "english": "one",
+    "pos": "measure word",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "给我一个苹果。",
+        "pinyin": "gěi wǒ yí ge píng guǒ.",
+        "en": "Give me an apple."
+      }
+    ]
+  },
+  "超市": {
+    "pinyin": "chāo shì",
+    "english": "supermarket",
+    "pos": "noun",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我去超市买东西。",
+        "pinyin": "wǒ qù chāo shì mǎi dōng xi.",
+        "en": "I go to the supermarket to buy things."
+      }
+    ]
+  },
+  "还有": {
+    "pinyin": "hái yǒu",
+    "english": "also have",
+    "pos": "phrase",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "还有什么问题吗？",
+        "pinyin": "hái yǒu shén me wèn tí ma?",
+        "en": "Are there any other questions?"
+      }
+    ]
+  },
+  "公园": {
+    "pinyin": "gōng yuán",
+    "english": "park",
+    "pos": "noun",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我们在公园里散步。",
+        "pinyin": "wǒ men zài gōng yuán lǐ sàn bù.",
+        "en": "We are taking a walk in the park."
+      }
+    ]
+  },
+  "太好了": {
+    "pinyin": "tài hǎo le",
+    "english": "that's great",
+    "pos": "phrase",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "你来了，太好了！",
+        "pinyin": "nǐ lái le, tài hǎo le!",
+        "en": "You're here, that's great!"
+      }
+    ]
+  },
+  "每天": {
+    "pinyin": "měi tiān",
+    "english": "every day",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我每天早上喝咖啡。",
+        "pinyin": "wǒ měi tiān zǎo shang hē kā fēi.",
+        "en": "I drink coffee every morning."
+      }
+    ]
+  },
+  "都": {
+    "pinyin": "dōu",
+    "english": "all, both",
+    "pos": "adverb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我们都是学生。",
+        "pinyin": "wǒ men dōu shì xué sheng.",
+        "en": "We are all students."
+      }
+    ]
+  },
+  "去": {
+    "pinyin": "qù",
+    "english": "go",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我要去学校。",
+        "pinyin": "wǒ yào qù xué xiào.",
+        "en": "I want to go to school."
+      }
+    ]
+  },
+  "散步": {
+    "pinyin": "sàn bù",
+    "english": "take a walk",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "晚饭后我们去散步吧。",
+        "pinyin": "wǎn fàn hòu wǒ men qù sàn bù ba.",
+        "en": "Let's take a walk after dinner."
+      }
+    ]
+  },
+  "吗": {
+    "pinyin": "ma",
+    "english": "question particle",
+    "pos": "particle",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "你是老师吗？",
+        "pinyin": "nǐ shì lǎo shī ma?",
+        "en": "Are you a teacher?"
+      }
+    ]
+  },
+  "是的": {
+    "pinyin": "shì de",
+    "english": "yes",
+    "pos": "phrase",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "是的，我是。",
+        "pinyin": "shì de, wǒ shì.",
+        "en": "Yes, I am."
+      }
+    ]
+  },
+  "早上": {
+    "pinyin": "zǎo shang",
+    "english": "morning",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "早上好！",
+        "pinyin": "zǎo shang hǎo!",
+        "en": "Good morning!"
+      }
+    ]
+  },
+  "跑步": {
+    "pinyin": "pǎo bù",
+    "english": "run, jog",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我喜欢在公园跑步。",
+        "pinyin": "wǒ xǐ huan zài gōng yuán pǎo bù.",
+        "en": "I like jogging in the park."
+      }
+    ]
+  },
+  "锻炼": {
+    "pinyin": "duàn liàn",
+    "english": "exercise",
+    "pos": "verb",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "每天锻炼身体很好。",
+        "pinyin": "měi tiān duàn liàn shēn tǐ hěn hǎo.",
+        "en": "Exercising every day is good for your health."
+      }
+    ]
+  },
+  "身体": {
+    "pinyin": "shēn tǐ",
+    "english": "body, health",
+    "pos": "noun",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "注意身体健康。",
+        "pinyin": "zhù yì shēn tǐ jiàn kāng.",
+        "en": "Pay attention to your health."
+      }
+    ]
+  },
+  "重要": {
+    "pinyin": "zhòng yào",
+    "english": "important",
+    "pos": "adjective",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "这件事很重要。",
+        "pinyin": "zhè jiàn shì hěn zhòng yào.",
+        "en": "This matter is very important."
+      }
+    ]
+  },
+  "那": {
+    "pinyin": "nà",
+    "english": "then, in that case",
+    "pos": "conjunction",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "那我们走吧。",
+        "pinyin": "nà wǒ men zǒu ba.",
+        "en": "Then let's go."
+      }
+    ]
+  },
+  "今天": {
+    "pinyin": "jīn tiān",
+    "english": "today",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "今天天气很好。",
+        "pinyin": "jīn tiān tiān qì hěn hǎo.",
+        "en": "The weather is very good today."
+      }
+    ]
+  },
+  "晚上": {
+    "pinyin": "wǎn shang",
+    "english": "evening, night",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "晚上见。",
+        "pinyin": "wǎn shang jiàn.",
+        "en": "See you tonight."
+      }
+    ]
+  },
+  "有空": {
+    "pinyin": "yǒu kòng",
+    "english": "have free time",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "你明天有空吗？",
+        "pinyin": "nǐ míng tiān yǒu kòng ma?",
+        "en": "Are you free tomorrow?"
+      }
+    ]
+  },
+  "我们": {
+    "pinyin": "wǒ men",
+    "english": "we, us",
+    "pos": "pronoun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我们是好朋友。",
+        "pinyin": "wǒ men shì hǎo péng you.",
+        "en": "We are good friends."
+      }
+    ]
+  },
+  "一起": {
+    "pinyin": "yì qǐ",
+    "english": "together",
+    "pos": "adverb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我们一起去吧。",
+        "pinyin": "wǒ men yì qǐ qù ba.",
+        "en": "Let's go together."
+      }
+    ]
+  },
+  "吃": {
+    "pinyin": "chī",
+    "english": "eat",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "你想吃什么？",
+        "pinyin": "nǐ xiǎng chī shén me?",
+        "en": "What do you want to eat?"
+      }
+    ]
+  },
+  "晚饭": {
+    "pinyin": "wǎn fàn",
+    "english": "dinner",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "晚饭准备好了。",
+        "pinyin": "wǎn fàn zhǔn bèi hǎo le.",
+        "en": "Dinner is ready."
+      }
+    ]
+  },
+  "好啊": {
+    "pinyin": "hǎo a",
+    "english": "okay, sure",
+    "pos": "phrase",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "好啊，我们去吧。",
+        "pinyin": "hǎo a, wǒ men qù ba.",
+        "en": "Sure, let's go."
+      }
+    ]
+  },
+  "一家": {
+    "pinyin": "yì jiā",
+    "english": "a (measure word for businesses)",
+    "pos": "measure word",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "这是一家新饭馆。",
+        "pinyin": "zhè shì yì jiā xīn fàn guǎn.",
+        "en": "This is a new restaurant."
+      }
+    ]
+  },
+  "不错": {
+    "pinyin": "bú cuò",
+    "english": "not bad, pretty good",
+    "pos": "adjective",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "这个主意不错。",
+        "pinyin": "zhè ge zhǔ yì bú cuò.",
+        "en": "This idea is not bad."
+      }
+    ]
+  },
+  "四川": {
+    "pinyin": "Sì chuān",
+    "english": "Sichuan (province)",
+    "pos": "noun",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "我喜欢四川菜。",
+        "pinyin": "wǒ xǐ huan Sì chuān cài.",
+        "en": "I like Sichuan cuisine."
+      }
+    ]
+  },
+  "饭馆": {
+    "pinyin": "fàn guǎn",
+    "english": "restaurant",
+    "pos": "noun",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "这家饭馆的菜很好吃。",
+        "pinyin": "zhè jiā fàn guǎn de cài hěn hǎo chī.",
+        "en": "The food at this restaurant is very delicious."
+      }
+    ]
+  },
+  "菜": {
+    "pinyin": "cài",
+    "english": "dish, cuisine",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "你喜欢吃什么菜？",
+        "pinyin": "nǐ xǐ huan chī shén me cài?",
+        "en": "What kind of food do you like to eat?"
+      }
+    ]
+  },
+  "太棒了": {
+    "pinyin": "tài bàng le",
+    "english": "awesome",
+    "pos": "phrase",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "你考了一百分，太棒了！",
+        "pinyin": "nǐ kǎo le yì bǎi fēn, tài bàng le!",
+        "en": "You got a 100 on the test, awesome!"
+      }
+    ]
+  },
+  "喜欢": {
+    "pinyin": "xǐ huan",
+    "english": "like",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我喜欢看书。",
+        "pinyin": "wǒ xǐ huan kàn shū.",
+        "en": "I like reading books."
+      }
+    ]
+  },
+  "辣": {
+    "pinyin": "là",
+    "english": "spicy",
+    "pos": "adjective",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "这个菜太辣了。",
+        "pinyin": "zhè ge cài tài là le.",
+        "en": "This dish is too spicy."
+      }
+    ]
+  },
+  "他们": {
+    "pinyin": "tā men",
+    "english": "they, them",
+    "pos": "pronoun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "他们是我的朋友。",
+        "pinyin": "tā men shì wǒ de péng you.",
+        "en": "They are my friends."
+      }
+    ]
+  },
+  "麻婆豆腐": {
+    "pinyin": "má pó dòu fu",
+    "english": "Mapo Tofu",
+    "pos": "noun",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "麻婆豆腐是一道有名的四川菜。",
+        "pinyin": "má pó dòu fu shì yí dào yǒu míng de Sì chuān cài.",
+        "en": "Mapo Tofu is a famous Sichuan dish."
+      }
+    ]
+  },
+  "好吃": {
+    "pinyin": "hǎo chī",
+    "english": "delicious",
+    "pos": "adjective",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "这个苹果很好吃。",
+        "pinyin": "zhè ge píng guǒ hěn hǎo chī.",
+        "en": "This apple is very delicious."
+      }
+    ]
+  },
+  "非常": {
+    "pinyin": "fēi cháng",
+    "english": "extremely, very",
+    "pos": "adverb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我非常喜欢这个地方。",
+        "pinyin": "wǒ fēi cháng xǐ huan zhè ge dì fang.",
+        "en": "I like this place extremely."
+      }
+    ]
+  },
+  "地道": {
+    "pinyin": "dì dao",
+    "english": "authentic",
+    "pos": "adjective",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "他的中文很地道。",
+        "pinyin": "tā de Zhōng wén hěn dì dao.",
+        "en": "His Chinese is very authentic."
+      }
+    ]
+  },
+  "六点半": {
+    "pinyin": "liù diǎn bàn",
+    "english": "half past six",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我们六点半见。",
+        "pinyin": "wǒ men liù diǎn bàn jiàn.",
+        "en": "Let's meet at half past six."
+      }
+    ]
+  },
+  "现在": {
+    "pinyin": "xiàn zài",
+    "english": "now",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "现在几点了？",
+        "pinyin": "xiàn zài jǐ diǎn le?",
+        "en": "What time is it now?"
+      }
+    ]
+  },
+  "先": {
+    "pinyin": "xiān",
+    "english": "first",
+    "pos": "adverb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "你先走吧。",
+        "pinyin": "nǐ xiān zǒu ba.",
+        "en": "You go first."
+      }
+    ]
+  },
+  "休息": {
+    "pinyin": "xiū xi",
+    "english": "rest",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "你需要休息一下。",
+        "pinyin": "nǐ xū yào xiū xi yí xià.",
+        "en": "You need to rest a bit."
+      }
+    ]
+  },
+  "一下": {
+    "pinyin": "yí xià",
+    "english": "a bit, briefly",
+    "pos": "measure word",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "请等一下。",
+        "pinyin": "qǐng děng yí xià.",
+        "en": "Please wait a moment."
+      }
+    ]
+  },
+  "工作": {
+    "pinyin": "gōng zuò",
+    "english": "work, job",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我的工作很忙。",
+        "pinyin": "wǒ de gōng zuò hěn máng.",
+        "en": "My job is very busy."
+      }
+    ]
+  },
+  "忙不忙": {
+    "pinyin": "máng bù máng",
+    "english": "busy or not",
+    "pos": "phrase",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "你最近忙不忙？",
+        "pinyin": "nǐ zuì jìn máng bù máng?",
+        "en": "Are you busy recently?"
+      }
+    ]
+  },
+  "最近": {
+    "pinyin": "zuì jìn",
+    "english": "recently",
+    "pos": "noun",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "最近天气很好。",
+        "pinyin": "zuì jìn tiān qì hěn hǎo.",
+        "en": "The weather has been good recently."
+      }
+    ]
+  },
+  "有点": {
+    "pinyin": "yǒu diǎn",
+    "english": "a little bit",
+    "pos": "adverb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我有点累。",
+        "pinyin": "wǒ yǒu diǎn lèi.",
+        "en": "I am a little tired."
+      }
+    ]
+  },
+  "忙": {
+    "pinyin": "máng",
+    "english": "busy",
+    "pos": "adjective",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "他很忙。",
+        "pinyin": "tā hěn máng.",
+        "en": "He is very busy."
+      }
+    ]
+  },
+  "要": {
+    "pinyin": "yào",
+    "english": "need to, want",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我要去超市。",
+        "pinyin": "wǒ yào qù chāo shì.",
+        "en": "I need to go to the supermarket."
+      }
+    ]
+  },
+  "开会": {
+    "pinyin": "kāi huì",
+    "english": "have a meeting",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "下午我们要开会。",
+        "pinyin": "xià wǔ wǒ men yào kāi huì.",
+        "en": "We have a meeting this afternoon."
+      }
+    ]
+  },
+  "但是": {
+    "pinyin": "dàn shì",
+    "english": "but",
+    "pos": "conjunction",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我想去，但是我没有时间。",
+        "pinyin": "wǒ xiǎng qù, dàn shì wǒ méi yǒu shí jiān.",
+        "en": "I want to go, but I don't have time."
+      }
+    ]
+  },
+  "同事": {
+    "pinyin": "tóng shì",
+    "english": "colleague",
+    "pos": "noun",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我的同事很好。",
+        "pinyin": "wǒ de tóng shì hěn hǎo.",
+        "en": "My colleagues are very nice."
+      }
+    ]
+  },
+  "们": {
+    "pinyin": "men",
+    "english": "plural marker",
+    "pos": "particle",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "朋友们好。",
+        "pinyin": "péng you men hǎo.",
+        "en": "Hello friends."
+      }
+    ]
+  },
+  "热情": {
+    "pinyin": "rè qíng",
+    "english": "enthusiastic, warm",
+    "pos": "adjective",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "他们非常热情。",
+        "pinyin": "tā men fēi cháng rè qíng.",
+        "en": "They are very enthusiastic."
+      }
+    ]
+  },
+  "那就好": {
+    "pinyin": "nà jiù hǎo",
+    "english": "that's good",
+    "pos": "phrase",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "你没事，那就好。",
+        "pinyin": "nǐ méi shì, nà jiù hǎo.",
+        "en": "You are fine, that's good."
+      }
+    ]
+  },
+  "如果": {
+    "pinyin": "rú guǒ",
+    "english": "if",
+    "pos": "conjunction",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "如果你有时间，给我打电话。",
+        "pinyin": "rú guǒ nǐ yǒu shí jiān, gěi wǒ dǎ diàn huà.",
+        "en": "If you have time, call me."
+      }
+    ]
+  },
+  "需要": {
+    "pinyin": "xū yào",
+    "english": "need",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我需要你的帮助。",
+        "pinyin": "wǒ xū yào nǐ de bāng zhù.",
+        "en": "I need your help."
+      }
+    ]
+  },
+  "帮忙": {
+    "pinyin": "bāng máng",
+    "english": "help",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "你可以帮我一个忙吗？",
+        "pinyin": "nǐ kě yǐ bāng wǒ yí ge máng ma?",
+        "en": "Can you do me a favor?"
+      }
+    ]
+  },
+  "随时": {
+    "pinyin": "suí shí",
+    "english": "anytime",
+    "pos": "adverb",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "有问题随时问我。",
+        "pinyin": "yǒu wèn tí suí shí wèn wǒ.",
+        "en": "Ask me anytime if you have questions."
+      }
+    ]
+  },
+  "告诉": {
+    "pinyin": "gào su",
+    "english": "tell",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "请告诉我你的名字。",
+        "pinyin": "qǐng gào su wǒ nǐ de míng zi.",
+        "en": "Please tell me your name."
+      }
+    ]
+  },
+  "对了": {
+    "pinyin": "duì le",
+    "english": "by the way",
+    "pos": "phrase",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "对了，你明天来吗？",
+        "pinyin": "duì le, nǐ míng tiān lái ma?",
+        "en": "By the way, are you coming tomorrow?"
+      }
+    ]
+  },
+  "中文": {
+    "pinyin": "Zhōng wén",
+    "english": "Chinese language",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我在学习中文。",
+        "pinyin": "wǒ zài xué xí Zhōng wén.",
+        "en": "I am studying Chinese."
+      }
+    ]
+  },
+  "越来越": {
+    "pinyin": "yuè lái yuè",
+    "english": "more and more",
+    "pos": "adverb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "天气越来越冷了。",
+        "pinyin": "tiān qì yuè lái yuè lěng le.",
+        "en": "The weather is getting colder and colder."
+      }
+    ]
+  },
+  "发音": {
+    "pinyin": "fā yīn",
+    "english": "pronunciation",
+    "pos": "noun",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "他的发音很标准。",
+        "pinyin": "tā de fā yīn hěn biāo zhǔn.",
+        "en": "His pronunciation is very standard."
+      }
+    ]
+  },
+  "标准": {
+    "pinyin": "biāo zhǔn",
+    "english": "standard, accurate",
+    "pos": "adjective",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "这个答案很标准。",
+        "pinyin": "zhè ge dá àn hěn biāo zhǔn.",
+        "en": "This answer is very standard."
+      }
+    ]
+  },
+  "哪里哪里": {
+    "pinyin": "nǎ lǐ nǎ lǐ",
+    "english": "you flatter me",
+    "pos": "phrase",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "哪里哪里，我还要多练习。",
+        "pinyin": "nǎ lǐ nǎ lǐ, wǒ hái yào duō liàn xí.",
+        "en": "You flatter me, I still need to practice more."
+      }
+    ]
+  },
+  "还": {
+    "pinyin": "hái",
+    "english": "still",
+    "pos": "adverb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "他还在睡觉。",
+        "pinyin": "tā hái zài shuì jiào.",
+        "en": "He is still sleeping."
+      }
+    ]
+  },
+  "在": {
+    "pinyin": "zài",
+    "english": "in progress",
+    "pos": "adverb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我在吃饭。",
+        "pinyin": "wǒ zài chī fàn.",
+        "en": "I am eating."
+      }
+    ]
+  },
+  "努力": {
+    "pinyin": "nǔ lì",
+    "english": "hardworking, strive",
+    "pos": "adjective",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "他工作很努力。",
+        "pinyin": "tā gōng zuò hěn nǔ lì.",
+        "en": "He works very hard."
+      }
+    ]
+  },
+  "学习": {
+    "pinyin": "xué xí",
+    "english": "study, learn",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我喜欢学习新东西。",
+        "pinyin": "wǒ xǐ huan xué xí xīn dōng xi.",
+        "en": "I like learning new things."
+      }
+    ]
+  },
+  "练习": {
+    "pinyin": "liàn xí",
+    "english": "practice",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "每天练习很重要。",
+        "pinyin": "měi tiān liàn xí hěn zhòng yào.",
+        "en": "Practicing every day is very important."
+      }
+    ]
+  },
+  "听力": {
+    "pinyin": "tīng lì",
+    "english": "listening comprehension",
+    "pos": "noun",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "我的听力不太好。",
+        "pinyin": "wǒ de tīng lì bú tài hǎo.",
+        "en": "My listening comprehension is not very good."
+      }
+    ]
+  },
+  "和": {
+    "pinyin": "hé",
+    "english": "and",
+    "pos": "conjunction",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我和他是朋友。",
+        "pinyin": "wǒ hé tā shì péng you.",
+        "en": "He and I are friends."
+      }
+    ]
+  },
+  "口语": {
+    "pinyin": "kǒu yǔ",
+    "english": "spoken language",
+    "pos": "noun",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "我想提高我的口语。",
+        "pinyin": "wǒ xiǎng tí gāo wǒ de kǒu yǔ.",
+        "en": "I want to improve my spoken language."
+      }
+    ]
+  },
+  "坚持": {
+    "pinyin": "jiān chí",
+    "english": "persist",
+    "pos": "verb",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "坚持就是胜利。",
+        "pinyin": "jiān chí jiù shì shèng lì.",
+        "en": "Persistence is victory."
+      }
+    ]
+  },
+  "以后": {
+    "pinyin": "yǐ hòu",
+    "english": "after, in the future",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "以后我们要多联系。",
+        "pinyin": "yǐ hòu wǒ men yào duō lián xì.",
+        "en": "We should keep in touch more in the future."
+      }
+    ]
+  },
+  "可以": {
+    "pinyin": "kě yǐ",
+    "english": "can, may",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我可以坐这里吗？",
+        "pinyin": "wǒ kě yǐ zuò zhè lǐ ma?",
+        "en": "May I sit here?"
+      }
+    ]
+  },
+  "多": {
+    "pinyin": "duō",
+    "english": "more",
+    "pos": "adverb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "多吃点水果。",
+        "pinyin": "duō chī diǎn shuǐ guǒ.",
+        "en": "Eat more fruit."
+      }
+    ]
+  },
+  "用": {
+    "pinyin": "yòng",
+    "english": "use",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我用手机上网。",
+        "pinyin": "wǒ yòng shǒu jī shàng wǎng.",
+        "en": "I use my phone to surf the internet."
+      }
+    ]
+  },
+  "聊天": {
+    "pinyin": "liáo tiān",
+    "english": "chat",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我们喜欢在一起聊天。",
+        "pinyin": "wǒ men xǐ huan zài yì qǐ liáo tiān.",
+        "en": "We like to chat together."
+      }
+    ]
+  },
+  "互相": {
+    "pinyin": "hù xiāng",
+    "english": "mutually, each other",
+    "pos": "adverb",
+    "difficulty": "Mid",
+    "examples": [
+      {
+        "zh": "我们要互相帮助。",
+        "pinyin": "wǒ men yào hù xiāng bāng zhù.",
+        "en": "We should help each other."
+      }
+    ]
+  },
+  "好主意": {
+    "pinyin": "hǎo zhǔ yì",
+    "english": "good idea",
+    "pos": "phrase",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "这是一个好主意！",
+        "pinyin": "zhè shì yí ge hǎo zhǔ yì!",
+        "en": "This is a good idea!"
+      }
+    ]
+  },
+  "时间": {
+    "pinyin": "shí jiān",
+    "english": "time",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我没有时间。",
+        "pinyin": "wǒ méi yǒu shí jiān.",
+        "en": "I don't have time."
+      }
+    ]
+  },
+  "差不多": {
+    "pinyin": "chà bu duō",
+    "english": "almost, about right",
+    "pos": "adjective",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "时间差不多了。",
+        "pinyin": "shí jiān chà bu duō le.",
+        "en": "It's about time."
+      }
+    ]
+  },
+  "了": {
+    "pinyin": "le",
+    "english": "completed action marker",
+    "pos": "particle",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我吃完了。",
+        "pinyin": "wǒ chī wán le.",
+        "en": "I have finished eating."
+      }
+    ]
+  },
+  "准备": {
+    "pinyin": "zhǔn bèi",
+    "english": "prepare, get ready",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我准备好了。",
+        "pinyin": "wǒ zhǔn bèi hǎo le.",
+        "en": "I am ready."
+      }
+    ]
+  },
+  "走": {
+    "pinyin": "zǒu",
+    "english": "go, walk",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我们走吧。",
+        "pinyin": "wǒ men zǒu ba.",
+        "en": "Let's go."
+      }
+    ]
+  },
+  "已经": {
+    "pinyin": "yǐ jīng",
+    "english": "already",
+    "pos": "adverb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我已经吃过饭了。",
+        "pinyin": "wǒ yǐ jīng chī guò fàn le.",
+        "en": "I have already eaten."
+      }
+    ]
+  },
+  "饿": {
+    "pinyin": "è",
+    "english": "hungry",
+    "pos": "adjective",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我有点饿了。",
+        "pinyin": "wǒ yǒu diǎn è le.",
+        "en": "I am a little hungry."
+      }
+    ]
+  },
+  "希望": {
+    "pinyin": "xī wàng",
+    "english": "hope",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "我希望明天不下雨。",
+        "pinyin": "wǒ xī wàng míng tiān bú xià yǔ.",
+        "en": "I hope it doesn't rain tomorrow."
+      }
+    ]
+  },
+  "不用": {
+    "pinyin": "bú yòng",
+    "english": "no need to",
+    "pos": "adverb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "不用客气。",
+        "pinyin": "bú yòng kè qi.",
+        "en": "You're welcome."
+      }
+    ]
+  },
+  "排队": {
+    "pinyin": "pái duì",
+    "english": "line up, queue",
+    "pos": "verb",
+    "difficulty": "Common",
+    "examples": [
+      {
+        "zh": "请排队买票。",
+        "pinyin": "qǐng pái duì mǎi piào.",
+        "en": "Please line up to buy tickets."
+      }
+    ]
+  },
+  "！": {
+    "pinyin": "!",
+    "english": "exclamation mark",
+    "pos": "punctuation",
+    "difficulty": "Known"
+  },
+  "。": {
+    "pinyin": ".",
+    "english": "period",
+    "pos": "punctuation",
+    "difficulty": "Known"
+  },
+  "，": {
+    "pinyin": ",",
+    "english": "comma",
+    "pos": "punctuation",
+    "difficulty": "Known"
+  },
+  "？": {
+    "pinyin": "?",
+    "english": "question mark",
+    "pos": "punctuation",
+    "difficulty": "Known"
+  }
+}

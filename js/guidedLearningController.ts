@@ -50,10 +50,8 @@ export const guidedLearningController = {
       proposedReviewSubtitleId = reviewFlowController.proposeNextRow(reviewQueue, history);
       if (proposedReviewSubtitleId !== null) {
         const proposedEntry = reviewQueue.find(q => q.subtitleId === proposedReviewSubtitleId);
-        if (proposedEntry && proposedEntry.rescueTokens.length > 0) {
-          proposedTargetToken = proposedEntry.rescueTokens[0];
-        } else if (proposedEntry && proposedEntry.reinforcementCandidates.length > 0) {
-          proposedTargetToken = proposedEntry.reinforcementCandidates[0].token;
+        if (proposedEntry && proposedEntry.targetTokens && proposedEntry.targetTokens.length > 0) {
+          proposedTargetToken = proposedEntry.targetTokens[0];
         }
       }
     }
@@ -71,7 +69,7 @@ export const guidedLearningController = {
 
     if (nextEntryState === 'ACCEPTED' && (nextProgressState === 'ROW_PROPOSED' || nextProgressState === 'ROW_ACTIVE')) {
       shouldRemainInWatchFlow = false;
-      if (orchestrationDecision.cognitiveMode === 'RECOVERY_REVIEW') {
+      if (orchestrationDecision.mode === 'RECOVERY_REVIEW') {
         controlMode = 'RECOVERY_ACTIVE';
         rationale.push('Mode RECOVERY_ACTIVE: Review accepted under recovery pressure.');
       } else {
@@ -83,18 +81,18 @@ export const guidedLearningController = {
       rationale.push('Mode REVIEW_READY: Review entry surfaced to learner.');
     } else {
       // Watch flow modes
-      if (orchestrationDecision.cognitiveMode === 'PASSIVE_WATCH') {
+      if (orchestrationDecision.mode === 'PASSIVE_WATCH') {
         controlMode = 'OPEN_WATCH';
         rationale.push('Mode OPEN_WATCH: Orchestrator suggests passive watch.');
-      } else if (orchestrationDecision.cognitiveMode === 'GUIDED_WATCH') {
+      } else if (orchestrationDecision.mode === 'GUIDED_WATCH') {
         controlMode = 'GUIDED_WATCH';
         rationale.push('Mode GUIDED_WATCH: Orchestrator suggests guided watch.');
         shouldSurfaceStudyPrompt = true;
-      } else if (orchestrationDecision.cognitiveMode === 'ACTIVE_STUDY') {
+      } else if (orchestrationDecision.mode === 'ACTIVE_STUDY') {
         controlMode = 'STUDY_FOCUS';
         rationale.push('Mode STUDY_FOCUS: Orchestrator suggests active study.');
         shouldSurfaceStudyPrompt = true;
-      } else if (orchestrationDecision.cognitiveMode === 'RECOVERY_REVIEW') {
+      } else if (orchestrationDecision.mode === 'RECOVERY_REVIEW') {
         // If review is not available/accepted but orchestrator wants recovery (e.g. queue empty but pressure high? unlikely, but fallback)
         controlMode = 'STUDY_FOCUS';
         rationale.push('Mode STUDY_FOCUS: Fallback for recovery without active review.');
