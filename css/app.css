@@ -22,22 +22,23 @@ body {
 }
 
 #app-container {
-  display: grid;
-  grid-template-columns: 1fr 350px;
+  display: flex;
+  flex-direction: column;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+  position: relative;
 }
 
 #main-content {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  border-right: 1px solid #334155;
+  width: 100%;
 }
 
 #video-surface {
-  flex: 0 0 55%;
+  flex: 0 0 70vh;
   position: relative;
   display: flex;
   justify-content: center;
@@ -46,8 +47,9 @@ body {
 }
 
 video {
-  max-height: 100%;
-  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 #controls-bar {
@@ -58,12 +60,19 @@ video {
   align-items: center;
   border-top: 1px solid #334155;
   border-bottom: 1px solid #334155;
+  flex-shrink: 0;
+}
+
+#workspace {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background: var(--bg-primary);
 }
 
 #transcript-panel {
   flex: 1;
   overflow-y: auto;
-  background: var(--bg-primary);
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -71,10 +80,47 @@ video {
 }
 
 #focus-panel {
-  background: #0f172a;
-  padding: 1.5rem;
+  display: none;
+  flex: 1;
   overflow-y: auto;
+  background: rgba(15, 23, 42, 0.95);
+  border-left: 1px solid #334155;
+  padding: 1.5rem;
 }
+
+#focus-panel.active {
+  display: block;
+}
+
+/* View Modes */
+body.mode-cinema #video-surface {
+  flex: 1;
+}
+body.mode-cinema #workspace {
+  display: none !important;
+}
+
+body.mode-study #video-surface {
+  flex: 0 0 70vh;
+}
+body.mode-study #transcript-panel {
+  display: flex;
+}
+body.mode-study #focus-panel {
+  display: none !important;
+}
+
+body.mode-intensive #video-surface {
+  flex: 0 0 70vh;
+}
+body.mode-intensive #workspace {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+body.mode-intensive #transcript-panel {
+  display: flex;
+}
+/* focus-panel is handled by .active class in Intensive mode */
 
 /* Multi-line Overlay */
 #subtitle-display {
@@ -251,3 +297,32 @@ video {
 }
 
 .hidden { display: none !important; }
+
+/* Responsive Layout */
+@media (max-width: 768px) {
+  body.mode-study #video-surface,
+  body.mode-intensive #video-surface {
+    flex: 0 0 42vh;
+  }
+
+  #controls-bar {
+    flex-wrap: wrap;
+  }
+
+  body.mode-intensive #workspace {
+    display: flex;
+    flex-direction: column;
+  }
+
+  #transcript-panel {
+    max-height: 35vh;
+    overflow-y: auto;
+  }
+
+  #focus-panel {
+    width: 100%;
+    max-width: none;
+    border-left: none;
+    border-top: 1px solid #334155;
+  }
+}

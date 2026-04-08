@@ -1,4 +1,17 @@
 {
+  "你好": {
+    "pinyin": "nǐ hǎo",
+    "english": "hello",
+    "pos": "phrase",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "你好！",
+        "pinyin": "nǐ hǎo!",
+        "en": "Hello!"
+      }
+    ]
+  },
   "你": {
     "pinyin": "nǐ",
     "english": "you",
@@ -178,6 +191,32 @@
         "zh": "这个苹果很大。",
         "pinyin": "zhè ge píng guǒ hěn dà.",
         "en": "This apple is very big."
+      }
+    ]
+  },
+  "谢": {
+    "pinyin": "xiè",
+    "english": "thank",
+    "pos": "verb",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "谢谢你。",
+        "pinyin": "xiè xie nǐ.",
+        "en": "Thank you."
+      }
+    ]
+  },
+  "饭": {
+    "pinyin": "fàn",
+    "english": "meal, cooked rice",
+    "pos": "noun",
+    "difficulty": "Known",
+    "examples": [
+      {
+        "zh": "我们去吃饭吧。",
+        "pinyin": "wǒ men qù chī fàn ba.",
+        "en": "Let's go eat."
       }
     ]
   },

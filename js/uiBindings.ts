@@ -29,6 +29,9 @@ export function initUI() {
   const btnLoadSRT = document.getElementById('btn-load-srt')!;
   const btnDemo = document.getElementById('btn-demo')!;
   const btnSlowMode = document.getElementById('btn-slow-mode');
+  const viewModeSelect = document.getElementById('view-mode-select') as HTMLSelectElement;
+  const toggleDevMode = document.getElementById('toggle-dev-mode') as HTMLInputElement;
+  const sessionMetrics = document.getElementById('session-metrics') as HTMLDivElement;
   const inputVideo = document.getElementById('input-video') as HTMLInputElement;
   const inputSRT = document.getElementById('input-srt') as HTMLInputElement;
 
@@ -43,6 +46,30 @@ export function initUI() {
   let srtFile: File | null = null;
   let currentVideoUrl: string | null = null;
   let currentSpeed = 1.0;
+  let isDevMode = false;
+
+  // Initialize view mode
+  if (viewModeSelect) {
+    document.body.classList.add(`mode-${viewModeSelect.value.toLowerCase()}`);
+    viewModeSelect.addEventListener('change', (e) => {
+      const mode = (e.target as HTMLSelectElement).value.toLowerCase();
+      document.body.classList.remove('mode-cinema', 'mode-study', 'mode-intensive');
+      document.body.classList.add(`mode-${mode}`);
+    });
+  }
+
+  if (toggleDevMode) {
+    toggleDevMode.addEventListener('change', (e) => {
+      isDevMode = (e.target as HTMLInputElement).checked;
+      if (isDevMode) {
+        sessionMetrics.classList.remove('hidden');
+      } else {
+        sessionMetrics.classList.add('hidden');
+      }
+      // Re-render focus panel to show/hide developer metadata
+      stateManager.setState({ selectedToken: stateManager.getState().selectedToken });
+    });
+  }
 
   if (btnSlowMode) {
     btnSlowMode.addEventListener('click', () => {
@@ -112,7 +139,6 @@ export function initUI() {
         myAudioUrl = URL.createObjectURL(myAudioBlob);
         
         if (btnPlayMine) btnPlayMine.classList.remove('hidden');
-        if (btnCompare) btnCompare.classList.remove('hidden');
         
         stream.getTracks().forEach(track => track.stop());
       };
@@ -126,7 +152,6 @@ export function initUI() {
       }
       if (status) status.textContent = 'Recording... Speak now.';
       if (btnPlayMine) btnPlayMine.classList.add('hidden');
-      if (btnCompare) btnCompare.classList.add('hidden');
 
     } catch (err) {
       console.error("Microphone access denied", err);
@@ -138,20 +163,6 @@ export function initUI() {
     if (myAudioUrl) {
       const audio = new Audio(myAudioUrl);
       audio.play();
-    }
-  };
-
-  (window as any).compareAudio = () => {
-    (window as any).playSourceAudio();
-    const state = stateManager.getState();
-    if (state.activeSubtitleId !== null) {
-      const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
-      if (sub) {
-        const duration = (sub.end - sub.start) * 1000;
-        setTimeout(() => {
-          (window as any).playMyAudio();
-        }, duration + 500);
-      }
     }
   };
 
@@ -352,24 +363,18 @@ export function initUI() {
       lastActiveId = state.activeSubtitleId;
       
       if (state.activeSubtitleId !== null) {
-        const activeIdx = state.subtitles.findIndex(s => s.id === state.activeSubtitleId);
-        const startIdx = Math.max(0, activeIdx - 2);
-        const visibleSubs = state.subtitles.slice(startIdx, activeIdx + 1);
-        
-        subDisplay.innerHTML = visibleSubs.map((s, i) => {
-          const isLast = i === visibleSubs.length - 1;
-          const rowHtml = renderSubtitleRow(s, state.savedWords, isLast ? 'overlay-active' : 'overlay-past');
-          if (isLast) {
-            return `<div class="relative group pointer-events-auto">
-                      ${rowHtml}
-                      <button class="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-slate-800/80 rounded-full text-slate-300 hover:text-white hover:bg-slate-700" onclick="window.replaySubtitle()">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                      </button>
-                    </div>`;
-          }
-          return rowHtml;
-        }).join('');
-        subDisplay.classList.remove('hidden');
+        const currentSub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+        if (currentSub) {
+          subDisplay.innerHTML = '';
+          const rowHtml = renderSubtitleRow(currentSub, state.savedWords, 'overlay-active');
+          subDisplay.innerHTML = `<div class="relative group pointer-events-auto">
+                    ${rowHtml}
+                    <button class="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-slate-800/80 rounded-full text-slate-300 hover:text-white hover:bg-slate-700" onclick="window.replaySubtitle()">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    </button>
+                  </div>`;
+          subDisplay.classList.remove('hidden');
+        }
 
         // Transcript highlight & scroll
         document.querySelectorAll('.transcript-row.active').forEach(el => el.classList.remove('active'));
@@ -380,10 +385,10 @@ export function initUI() {
         }
 
         // Instrument Exposure & Record Memory: Passive View for all tokens in the active row
-        const currentSub = state.subtitles.find(s => s.id === state.activeSubtitleId);
-        if (currentSub && currentSub.tokens) {
+        const currentSubForExposure = state.subtitles.find(s => s.id === state.activeSubtitleId);
+        if (currentSubForExposure && currentSubForExposure.tokens) {
           const now = timeAuthority.getNow();
-          currentSub.tokens.forEach(token => {
+          currentSubForExposure.tokens.forEach(token => {
             // Log Exposure
             logExposure({
               token,
@@ -402,7 +407,7 @@ export function initUI() {
           engineLoop.processEvent({ 
             type: 'SUBTITLE_TRANSITION', 
             subtitleId: state.activeSubtitleId, 
-            tokens: currentSub?.tokens || [] 
+            tokens: currentSubForExposure?.tokens || [] 
           });
         }
       } else {
@@ -460,6 +465,7 @@ export function initUI() {
       lastReviewQueueRef = state.reviewQueuePreview;
 
       if (state.selectedToken) {
+        focusPanel.classList.add('active');
         const lookup = dictionaryEngine.getEntry(state.selectedToken);
         const entry = lookup.entry;
         const status = lookup.truthStatus;
@@ -472,25 +478,19 @@ export function initUI() {
         const memory = learningMemory.getRecord(state.selectedToken);
         const lastSeen = memory ? new Date(memory.lastSeenAt).toLocaleString() : 'Never';
 
-        // Find examples (limit to 5 for performance)
-        const examples = state.subtitles.filter(s => s.text.includes(state.selectedToken!)).slice(0, 5);
+        // Find examples (limit to 1 for MVP)
+        const examples = state.subtitles.filter(s => s.text.includes(state.selectedToken!)).slice(0, 1);
         const examplesHtml = examples.map(s => renderSubtitleRow(s, state.savedWords, 'example-row')).join('');
 
         focusPanel.innerHTML = `
           ${isSuggested ? '<div class="text-[10px] uppercase tracking-widest text-accent-primary mb-1 font-bold opacity-80">Suggested Focus</div>' : ''}
-          <div class="flex justify-between items-start mb-4">
+          <div class="flex justify-between items-start mb-4 pr-6">
             <h2 class="text-3xl font-bold text-accent-primary">${state.selectedToken}</h2>
             <button id="btn-save-word" class="save-btn ${isSaved ? 'saved' : ''}">
               ${isSaved ? '★ Saved' : '☆ Save'}
             </button>
           </div>
-          <div class="mb-6">
-            <div class="text-[10px] uppercase tracking-widest opacity-50 mb-1 font-bold">
-              ${status === 'CURATED' ? 'Curated Learning Token' : 
-                status === 'FOUND' ? 'Dictionary Entry' : 
-                status === 'MISSING' ? 'Word not yet in learning dictionary' : 
-                'Not a Chinese lexical token'}
-            </div>
+          <div class="mb-4">
             ${entry ? `
               <p class="text-xl italic opacity-80">${entry.pinyin}</p>
               <p class="text-lg mt-2">${entry.meaning}</p>
@@ -499,67 +499,16 @@ export function initUI() {
             `}
           </div>
           
-          <div class="grid grid-cols-2 gap-2 text-sm mb-4">
-            <div class="bg-slate-800 p-2 rounded border border-slate-700">
-              <span class="opacity-50">Difficulty:</span> 
-              <span class="font-semibold text-accent-primary">${heatLabel}</span>
-            </div>
-            <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
-              <span>Freq Rank:</span> --
-            </div>
-            <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
-              <span>HSK Level:</span> --
-            </div>
-          </div>
-
-          <!-- Memory Metadata Section -->
-          <div class="mb-6 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-            <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Memory Trace</h4>
-            <div class="grid grid-cols-3 gap-2 text-[10px] mb-2">
-              <div class="flex flex-col">
-                <span class="opacity-50">Encounters</span>
-                <span class="font-bold text-accent-primary">${memory?.encounterCount || 0}</span>
-              </div>
-              <div class="flex flex-col">
-                <span class="opacity-50">Reviews</span>
-                <span class="font-bold text-accent-primary">${memory?.reviewCount || 0}</span>
-              </div>
-              <div class="flex flex-col">
-                <span class="opacity-50">Saves</span>
-                <span class="font-bold text-accent-primary">${memory?.saveCount || 0}</span>
-              </div>
-            </div>
-            <div class="text-[10px]">
-              <span class="opacity-50">Last Seen:</span>
-              <span class="opacity-80">${lastSeen}</span>
-            </div>
-            <div class="text-[10px] mt-1">
-              <span class="opacity-50">Cognitive State:</span>
-              <span class="opacity-80 italic">${state.selectedTokenLearningProfile ? state.selectedTokenLearningProfile.inferredState : 'Not yet inferred'}</span>
-            </div>
-            ${state.selectedTokenReinforcementClass ? `
-            <div class="text-[10px] mt-1">
-              <span class="opacity-50">Reinforcement Class:</span>
-              <span class="opacity-80 font-bold text-accent-secondary">${state.selectedTokenReinforcementClass}</span>
-            </div>
-            ` : ''}
-          </div>
-
-          <!-- Heatmap Legend -->
-          <div class="mb-8 p-3 bg-slate-900/50 rounded-lg border border-slate-800">
-            <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Difficulty Guide</h4>
-            <div class="flex flex-wrap gap-2 text-[10px]">
-              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-400"></span> Known</div>
-              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Common</div>
-              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Mid</div>
-              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-500"></span> Rare</div>
-              <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Unknown</div>
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold mb-2 border-b border-slate-700 pb-1">Example</h3>
+            <div class="flex flex-col gap-2">
+              ${examples.length > 0 ? examplesHtml : '<div class="text-sm opacity-40 italic p-2 border border-dashed border-slate-700 rounded text-center">No examples available.</div>'}
             </div>
           </div>
 
           <!-- Record & Compare MVP -->
-          <div class="mb-6 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-            <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Pronunciation Practice (MVP)</h4>
+          <div class="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+            <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Pronunciation Practice</h4>
             <div class="flex flex-wrap gap-2 text-xs">
               <button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-bold transition-colors" onclick="window.playSourceAudio()">
                 Listen
@@ -570,31 +519,73 @@ export function initUI() {
               <button id="btn-play-mine" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded font-bold transition-colors hidden" onclick="window.playMyAudio()">
                 Play Mine
               </button>
-              <button id="btn-compare-again" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded font-bold transition-colors hidden" onclick="window.compareAudio()">
-                Compare Again
-              </button>
             </div>
             <div id="recording-status" class="text-[10px] mt-2 opacity-60 italic"></div>
           </div>
 
-          <div>
-            <h3 class="text-lg font-semibold mb-3 border-b border-slate-700 pb-1">Example Sandbox</h3>
-            <div class="flex flex-col gap-2">
-              ${examples.length > 0 ? examplesHtml : '<div class="text-sm opacity-40 italic p-4 border border-dashed border-slate-700 rounded text-center">No examples available in current subtitle corpus.</div>'}
+          ${isDevMode ? `
+          <details class="mt-4 text-xs opacity-60 group">
+            <summary class="cursor-pointer font-bold hover:text-white transition-colors">Developer Metadata</summary>
+            <div class="mt-2 pl-2 border-l-2 border-slate-700">
+              <div class="grid grid-cols-2 gap-2 mb-4">
+                <div class="bg-slate-800 p-2 rounded border border-slate-700">
+                  <span class="opacity-50">Difficulty:</span> 
+                  <span class="font-semibold text-accent-primary">${heatLabel}</span>
+                </div>
+                <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
+                  <span>Freq Rank:</span> --
+                </div>
+              </div>
+
+              <!-- Memory Metadata Section -->
+              <div class="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                <h4 class="text-[10px] uppercase tracking-wider opacity-40 mb-2 font-bold">Memory Trace</h4>
+                <div class="grid grid-cols-3 gap-2 text-[10px] mb-2">
+                  <div class="flex flex-col">
+                    <span class="opacity-50">Encounters</span>
+                    <span class="font-bold text-accent-primary">${memory?.encounterCount || 0}</span>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="opacity-50">Reviews</span>
+                    <span class="font-bold text-accent-primary">${memory?.reviewCount || 0}</span>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="opacity-50">Saves</span>
+                    <span class="font-bold text-accent-primary">${memory?.saveCount || 0}</span>
+                  </div>
+                </div>
+                <div class="text-[10px]">
+                  <span class="opacity-50">Last Seen:</span>
+                  <span class="opacity-80">${lastSeen}</span>
+                </div>
+                <div class="text-[10px] mt-1">
+                  <span class="opacity-50">Cognitive State:</span>
+                  <span class="opacity-80 italic">${state.selectedTokenLearningProfile ? state.selectedTokenLearningProfile.inferredState : 'Not yet inferred'}</span>
+                </div>
+                ${state.selectedTokenReinforcementClass ? `
+                <div class="text-[10px] mt-1">
+                  <span class="opacity-50">Reinforcement Class:</span>
+                  <span class="opacity-80 font-bold text-accent-secondary">${state.selectedTokenReinforcementClass}</span>
+                </div>
+                ` : ''}
+              </div>
             </div>
-          </div>
+          </details>
+          ` : ''}
         `;
       } else {
         let reviewQueueHtml = '';
         const decision = state.activeGuidedControlDecision;
+        let hasReview = false;
         
         if (decision && decision.shouldSurfaceReviewEntry && decision.proposedReviewSubtitleId !== null) {
+          hasReview = true;
           const entry = state.reviewQueuePreview?.find(e => e.subtitleId === decision.proposedReviewSubtitleId);
           const dueCount = entry?.dueTokensCount || entry?.targetTokens.length || 0;
           const topTokens = entry?.targetTokens.slice(0, 3).join(', ') || '';
           
           reviewQueueHtml = `
-            <div class="w-full max-w-[250px] mt-4 p-4 bg-accent-primary/10 border border-accent-primary/30 rounded-lg text-left shadow-lg">
+            <div class="w-full mt-4 p-4 bg-accent-primary/10 border border-accent-primary/30 rounded-lg text-left shadow-lg">
               <h4 class="text-xs uppercase tracking-wider text-accent-primary mb-2 font-bold flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-accent-primary animate-pulse"></span>
                 Review Ready
@@ -616,8 +607,9 @@ export function initUI() {
             </div>
           `;
         } else if (decision && decision.reviewProgressState === 'ROW_PROPOSED' && decision.proposedReviewSubtitleId !== null) {
+          hasReview = true;
           reviewQueueHtml = `
-            <div class="w-full max-w-[250px] mt-4 p-4 bg-accent-secondary/10 border border-accent-secondary/30 rounded-lg text-left shadow-lg">
+            <div class="w-full mt-4 p-4 bg-accent-secondary/10 border border-accent-secondary/30 rounded-lg text-left shadow-lg">
               <h4 class="text-xs uppercase tracking-wider text-accent-secondary mb-2 font-bold flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-accent-secondary animate-pulse"></span>
                 Review Active
@@ -631,12 +623,13 @@ export function initUI() {
             </div>
           `;
         } else if (decision && decision.reviewProgressState === 'ROW_ACTIVE') {
+          hasReview = true;
           const entry = state.reviewQueuePreview?.find(e => e.subtitleId === decision.proposedReviewSubtitleId);
           const targetTokens = entry?.targetTokens || [];
           const tokenHtml = targetTokens.map(t => `<span class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-accent-primary font-bold">${t}</span>`).join(' ');
           
           reviewQueueHtml = `
-            <div class="w-full max-w-[250px] mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-left shadow-lg">
+            <div class="w-full mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-left shadow-lg">
               <h4 class="text-xs uppercase tracking-wider text-green-400 mb-2 font-bold flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
                 Reviewing Row
@@ -664,22 +657,17 @@ export function initUI() {
           `;
         }
 
-        focusPanel.innerHTML = `
-          <div class="flex h-full flex-col items-center justify-center text-center gap-4">
-            <p class="opacity-30">Select a token to view details and examples.</p>
-            <div class="w-full max-w-[200px] p-3 bg-slate-900/50 rounded-lg border border-slate-800 text-left opacity-30">
-              <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Difficulty Guide</h4>
-              <div class="flex flex-col gap-1 text-[10px]">
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-400"></span> Known (Saved)</div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Common (Basic)</div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Medium (Short)</div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange-500"></span> Rare (Long)</div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"></span> Unknown</div>
-              </div>
+        if (hasReview) {
+          focusPanel.classList.add('active');
+          focusPanel.innerHTML = `
+            <div class="flex h-full flex-col items-center justify-center text-center gap-4">
+              ${reviewQueueHtml}
             </div>
-            ${reviewQueueHtml}
-          </div>
-        `;
+          `;
+        } else {
+          focusPanel.classList.remove('active');
+          focusPanel.innerHTML = '';
+        }
       }
     }
   });
@@ -728,6 +716,17 @@ export function initUI() {
     if (target.classList.contains('token')) {
       const token = target.getAttribute('data-token');
       if (token) {
+        // Audio Interaction Recovery: Play pronunciation
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(token);
+        utterance.lang = "zh-CN";
+        window.speechSynthesis.speak(utterance);
+
+        // Pause video
+        if (video && !video.paused) {
+          video.pause();
+        }
+
         const now = timeAuthority.getNow();
         // Instrument Exposure: Selected
         logExposure({
@@ -747,8 +746,11 @@ export function initUI() {
     const row = target.closest('.subtitle-row') as HTMLElement;
     if (row && (row.classList.contains('transcript-row') || row.classList.contains('example-row'))) {
       const start = parseFloat(row.getAttribute('data-start') || '0');
+      console.log(`[Seek] Clicked subtitle start: ${start}`);
+      console.log(`[Seek] Video currentTime before: ${video.currentTime}`);
       video.currentTime = start;
-      // Removed video.play() to respect current playback state
+      video.play();
+      console.log(`[Seek] Video currentTime after: ${video.currentTime}`);
       return;
     }
 
