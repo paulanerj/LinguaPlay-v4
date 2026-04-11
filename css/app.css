@@ -119,11 +119,16 @@ body.mode-intensive #video-surface {
   flex: 0 0 55vh;
 }
 body.mode-intensive #workspace {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
 }
 body.mode-intensive #transcript-panel {
   display: flex;
+}
+body.mode-intensive #focus-panel {
+  display: block;
+  border-top: none;
+  border-left: 1px solid #334155;
 }
 
 /* Multi-line Overlay */
@@ -370,6 +375,23 @@ body.mode-intensive #transcript-panel {
     flex: 0 0 48vh;
   }
 
+  body.mode-intensive #workspace {
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.mode-intensive #transcript-panel {
+    max-height: 35vh;
+    flex: 0 0 auto;
+  }
+
+  body.mode-intensive #focus-panel {
+    flex: 1;
+    min-height: 0;
+    border-left: none;
+    border-top: 1px solid #334155;
+  }
+
   .subtitle-row {
     font-size: 28px;
     padding: 0.4rem 1rem;
@@ -404,27 +426,5 @@ body.mode-intensive #transcript-panel {
 
   .subtitle-row {
     font-size: 30px;
-  }
-
-  body.mode-intensive #workspace {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  #focus-panel {
-    border-top: none;
-    border-left: 1px solid #334155;
-  }
-}
-
-@media (min-width: 1025px) {
-  body.mode-intensive #workspace {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  #focus-panel {
-    border-top: none;
-    border-left: 1px solid #334155;
   }
 }

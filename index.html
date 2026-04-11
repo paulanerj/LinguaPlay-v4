@@ -17,54 +17,31 @@
         </div>
         
         <div id="controls-bar" class="h-[48px] flex items-center justify-between px-4 bg-slate-800 border-y border-slate-700 shrink-0 z-20">
-          <div class="flex items-center gap-2">
-            <button id="btn-load-main" class="ui-btn-compact">Load</button>
-            <button id="btn-demo" class="ui-btn-compact">Demo</button>
-            <select id="view-mode-select" class="ui-btn-compact bg-slate-700 border-none outline-none cursor-pointer">
+          <div class="flex items-center gap-3">
+            <button id="btn-load-video" class="ui-btn-compact">Load Content</button>
+            <button id="btn-load-srt" class="ui-btn-compact">Load Subtitles</button>
+            <select id="view-mode-select" class="ui-btn-compact bg-slate-700 border-none outline-none cursor-pointer ml-2">
               <option value="CINEMA">Cinema</option>
               <option value="STUDY">Study</option>
               <option value="INTENSIVE" selected>Intensive</option>
             </select>
+            <button id="btn-slow-mode" class="ui-btn-compact ml-2">Speed: 1.0x</button>
           </div>
 
-          <div id="status-line" class="hidden md:block text-[10px] uppercase tracking-widest opacity-40 truncate max-w-[200px]">
-            demo mode active
-          </div>
-
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-4">
+            <div id="status-line" class="hidden md:block text-[10px] uppercase tracking-widest opacity-40 truncate max-w-[200px]">
+              ready
+            </div>
             <div id="status-lexicon" class="text-[10px] opacity-40 hidden sm:block">Lexicon: Loading...</div>
-            <button id="btn-settings-toggle" class="ui-btn-compact" title="Settings">⚙</button>
+            <label class="flex items-center gap-2 text-[10px] uppercase tracking-widest cursor-pointer opacity-70 hover:opacity-100 transition-opacity font-bold">
+              <input type="checkbox" id="toggle-dev-mode" class="rounded border-slate-600 bg-slate-700 text-accent-primary focus:ring-accent-primary">
+              Dev Mode
+            </label>
           </div>
         </div>
 
-        <!-- Settings Drawer -->
-        <div id="settings-drawer" class="hidden absolute top-[48px] right-0 w-64 bg-slate-800 border-l border-b border-slate-700 shadow-2xl z-30 p-4">
-          <h3 class="text-xs font-bold uppercase tracking-widest opacity-50 mb-4 pb-2 border-b border-slate-700">Settings</h3>
-          
-          <div class="flex flex-col gap-4">
-            <div class="flex flex-col gap-2">
-              <label class="text-[10px] uppercase opacity-50 font-bold">Content</label>
-              <button id="btn-load-video" class="ui-btn text-left justify-start">Load Video</button>
-              <button id="btn-load-srt" class="ui-btn text-left justify-start">Load Subtitles</button>
-            </div>
-
-            <div class="flex flex-col gap-2">
-              <label class="text-[10px] uppercase opacity-50 font-bold">Playback</label>
-              <button id="btn-slow-mode" class="ui-btn text-left justify-start">Speed: 1.0x</button>
-            </div>
-
-            <div class="flex flex-col gap-2">
-              <label class="text-[10px] uppercase opacity-50 font-bold">Developer</label>
-              <label class="flex items-center gap-2 text-xs cursor-pointer opacity-70 hover:opacity-100 transition-opacity">
-                <input type="checkbox" id="toggle-dev-mode" class="rounded border-slate-600 bg-slate-700 text-accent-primary focus:ring-accent-primary">
-                Dev Mode
-              </label>
-            </div>
-          </div>
-
-          <input type="file" id="input-video" accept="video/*" class="hidden">
-          <input type="file" id="input-srt" accept=".srt" class="hidden">
-        </div>
+        <input type="file" id="input-video" accept="video/*" class="hidden">
+        <input type="file" id="input-srt" accept=".srt" class="hidden">
 
         <div id="workspace">
           <div id="transcript-panel"></div>

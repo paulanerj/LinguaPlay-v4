@@ -27,11 +27,6 @@ export function initUI() {
   const tooltip = document.getElementById('quick-preview-tooltip')!;
   const statusLine = document.getElementById('status-line')!;
 
-  const btnLoadMain = document.getElementById('btn-load-main')!;
-  const btnDemo = document.getElementById('btn-demo')!;
-  const btnSettingsToggle = document.getElementById('btn-settings-toggle')!;
-  const settingsDrawer = document.getElementById('settings-drawer')!;
-  
   const btnLoadVideo = document.getElementById('btn-load-video')!;
   const btnLoadSRT = document.getElementById('btn-load-srt')!;
   const btnSlowMode = document.getElementById('btn-slow-mode');
@@ -39,23 +34,6 @@ export function initUI() {
   const toggleDevMode = document.getElementById('toggle-dev-mode') as HTMLInputElement;
   const inputVideo = document.getElementById('input-video') as HTMLInputElement;
   const inputSRT = document.getElementById('input-srt') as HTMLInputElement;
-
-  // Settings Drawer Toggle
-  btnSettingsToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    settingsDrawer.classList.toggle('hidden');
-  });
-
-  // Close drawer when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!settingsDrawer.contains(e.target as Node) && e.target !== btnSettingsToggle) {
-      settingsDrawer.classList.add('hidden');
-    }
-  });
-
-  btnLoadMain.addEventListener('click', () => {
-    settingsDrawer.classList.remove('hidden');
-  });
 
   let transcriptRendered = false;
   let lastActiveId: number | null = null;
@@ -324,7 +302,7 @@ export function initUI() {
     }
   });
 
-  btnDemo.addEventListener('click', async () => {
+  async function loadDemo() {
     // Revoke previous URL if it exists
     if (currentVideoUrl) {
       URL.revokeObjectURL(currentVideoUrl);
@@ -387,7 +365,7 @@ export function initUI() {
       console.error("Demo Load Failed:", err);
       statusLine.textContent = 'demo load failed';
     }
-  });
+  }
 
   // Video Time Update
   video.addEventListener('timeupdate', () => {
@@ -1022,4 +1000,6 @@ export function initUI() {
     clearTimeout(touchTimeout);
     hideTooltip();
   }, { passive: true });
+
+  return { loadDemo };
 }

@@ -58,7 +58,7 @@ async function bootstrap() {
   console.log("LinguaPlay Initializing...");
 
   // 1. Initialize UI
-  initUI();
+  const { loadDemo } = initUI();
 
   // 2. Load Lexicon (Phase 3 Task)
   await dictionaryEngine.loadLargeLexicon('/data/cn_lexicon_large.json');
@@ -67,7 +67,7 @@ async function bootstrap() {
   runSegmentationTest();
 
   // 3. Initial Demo Load
-  document.getElementById('btn-demo')?.click();
+  await loadDemo();
 
   const finalState = stateManager.getState();
   console.log(`LinguaPlay Ready. LexiconMode: ${finalState.lexiconMode}`);
