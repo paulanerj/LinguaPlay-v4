@@ -16,6 +16,10 @@ export function renderSubtitleRow(subtitle: Subtitle, savedWords: Set<string>, e
   const rawTokens = tokenTrie.segment(subtitle.text);
   const tokens = segmentationPostProcessor.process(rawTokens);
   
+  // Tokenization Trace
+  console.log(`[Subtitle] raw line: ${subtitle.text}`);
+  console.log(`[Tokenizer] produced tokens:\n${tokens.join('\n')}`);
+  
   let unknownCount = 0;
   let rareCount = 0;
   let totalLexical = 0;
@@ -32,10 +36,15 @@ export function renderSubtitleRow(subtitle: Subtitle, savedWords: Set<string>, e
       if (heatClass === 'heat-rare') rareCount++;
     }
 
-    // Task 4: data-stack (will be updated dynamically in uiBindings for attention/selected)
     const stack = `${heatClass.replace('heat-', '')}`;
+    const pinyin = result.entry?.pinyin || '';
     
-    return `<span class="token ${isSaved} ${heatClass} ${truthClass}" data-token="${token}" data-stack="${stack}">${token}</span>`;
+    return `
+      <span class="token-container inline-flex flex-col items-center">
+        <span class="pinyin text-[0.6em] opacity-0 group-hover:opacity-80 transition-opacity leading-none mb-1">${pinyin}</span>
+        <span class="token ${isSaved} ${heatClass} ${truthClass}" data-token="${token}" data-stack="${stack}">${token}</span>
+      </span>
+    `;
   }).join('');
 
   let rowHeatClass = '';
@@ -47,9 +56,15 @@ export function renderSubtitleRow(subtitle: Subtitle, savedWords: Set<string>, e
     else rowHeatClass = 'border-l-4 border-green-500/50';
   }
 
+  // Generate a full line pinyin for the row (used in transcript)
+  const fullPinyin = tokens.map(t => dictionaryEngine.getEntry(t).entry?.pinyin || '').join(' ');
+
   return `
-    <div class="subtitle-row ${extraClass} ${rowHeatClass}" data-id="${subtitle.id}" data-start="${subtitle.start}">
-      ${tokenHtml}
+    <div class="subtitle-row group ${extraClass} ${rowHeatClass}" data-id="${subtitle.id}" data-start="${subtitle.start}">
+      <div class="chinese-line flex flex-wrap justify-center items-end gap-x-1">
+        ${tokenHtml}
+      </div>
+      <div class="pinyin-line hidden text-center mt-1 opacity-60 font-light italic">${fullPinyin}</div>
     </div>
   `;
 }

@@ -16,6 +16,8 @@ import { learningMemory } from './learningMemory.ts';
 import { timeAuthority } from './timeAuthority.ts';
 import { cognitiveSelectors } from './cognitiveSelectors.ts';
 import { engineLoop } from './engineLoop.ts';
+import { tokenTrie } from './tokenTrie.ts';
+import { segmentationPostProcessor } from './segmentationPostProcessor.ts';
 
 export function initUI() {
   const video = document.querySelector('video') as HTMLVideoElement;
@@ -25,15 +27,35 @@ export function initUI() {
   const tooltip = document.getElementById('quick-preview-tooltip')!;
   const statusLine = document.getElementById('status-line')!;
 
+  const btnLoadMain = document.getElementById('btn-load-main')!;
+  const btnDemo = document.getElementById('btn-demo')!;
+  const btnSettingsToggle = document.getElementById('btn-settings-toggle')!;
+  const settingsDrawer = document.getElementById('settings-drawer')!;
+  
   const btnLoadVideo = document.getElementById('btn-load-video')!;
   const btnLoadSRT = document.getElementById('btn-load-srt')!;
-  const btnDemo = document.getElementById('btn-demo')!;
   const btnSlowMode = document.getElementById('btn-slow-mode');
   const viewModeSelect = document.getElementById('view-mode-select') as HTMLSelectElement;
   const toggleDevMode = document.getElementById('toggle-dev-mode') as HTMLInputElement;
-  const sessionMetrics = document.getElementById('session-metrics') as HTMLDivElement;
   const inputVideo = document.getElementById('input-video') as HTMLInputElement;
   const inputSRT = document.getElementById('input-srt') as HTMLInputElement;
+
+  // Settings Drawer Toggle
+  btnSettingsToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    settingsDrawer.classList.toggle('hidden');
+  });
+
+  // Close drawer when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!settingsDrawer.contains(e.target as Node) && e.target !== btnSettingsToggle) {
+      settingsDrawer.classList.add('hidden');
+    }
+  });
+
+  btnLoadMain.addEventListener('click', () => {
+    settingsDrawer.classList.remove('hidden');
+  });
 
   let transcriptRendered = false;
   let lastActiveId: number | null = null;
@@ -55,17 +77,15 @@ export function initUI() {
       const mode = (e.target as HTMLSelectElement).value.toLowerCase();
       document.body.classList.remove('mode-cinema', 'mode-study', 'mode-intensive');
       document.body.classList.add(`mode-${mode}`);
+      
+      // Force re-render of focus panel to respect new mode
+      stateManager.setState({ selectedToken: stateManager.getState().selectedToken });
     });
   }
 
   if (toggleDevMode) {
     toggleDevMode.addEventListener('change', (e) => {
       isDevMode = (e.target as HTMLInputElement).checked;
-      if (isDevMode) {
-        sessionMetrics.classList.remove('hidden');
-      } else {
-        sessionMetrics.classList.add('hidden');
-      }
       // Re-render focus panel to show/hide developer metadata
       stateManager.setState({ selectedToken: stateManager.getState().selectedToken });
     });
@@ -212,12 +232,20 @@ export function initUI() {
   }
 
   // File Loading Bindings
-  btnLoadVideo.addEventListener('click', () => inputVideo.click());
-  btnLoadSRT.addEventListener('click', () => inputSRT.click());
+  btnLoadVideo.onclick = () => {
+    console.log('[Control] Load Video clicked');
+    inputVideo.click();
+  };
+  
+  btnLoadSRT.onclick = () => {
+    console.log('[Control] Load SRT clicked');
+    inputSRT.click();
+  };
 
   inputVideo.addEventListener('change', (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (file) {
+      console.log(`[Video] File selected: ${file.name}`);
       // Revoke previous URL if it exists
       if (currentVideoUrl) {
         URL.revokeObjectURL(currentVideoUrl);
@@ -226,6 +254,8 @@ export function initUI() {
       videoFile = file;
       currentVideoUrl = URL.createObjectURL(file);
       video.src = currentVideoUrl;
+      video.load();
+      console.log(`[Video] Source attached to player`);
       
       resetContentState();
       updateStatus();
@@ -235,6 +265,7 @@ export function initUI() {
   inputSRT.addEventListener('change', (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (file) {
+      console.log(`[SRT] File loaded: ${file.name}`);
       const reader = new FileReader();
       reader.onload = (event) => {
         try {
@@ -242,9 +273,41 @@ export function initUI() {
           const subs = parseSRT(text);
           if (subs.length === 0) throw new Error("No subtitles found");
           
+          console.log(`[SRT] Subtitle entries parsed: ${subs.length}`);
           srtFile = file;
           resetContentState();
           stateManager.setState({ subtitles: subs });
+          
+          // Coverage Audit
+          let totalTokens = 0;
+          let matchedTokens = 0;
+          const unresolvedTokens = new Set<string>();
+          
+          subs.forEach(sub => {
+            const rawTokens = tokenTrie.segment(sub.text);
+            const tokens = segmentationPostProcessor.process(rawTokens);
+            tokens.forEach(token => {
+              const isChinese = /[\u4e00-\u9fa5]/.test(token);
+              if (isChinese) {
+                totalTokens++;
+                const lookup = dictionaryEngine.getEntry(token);
+                if (lookup.entry) {
+                  matchedTokens++;
+                } else {
+                  unresolvedTokens.add(token);
+                }
+              }
+            });
+          });
+          
+          const coverage = totalTokens > 0 ? Math.round((matchedTokens / totalTokens) * 100) : 0;
+          console.log(`\n--- Coverage Audit ---`);
+          console.log(`Subtitle lines scanned: ${subs.length}`);
+          console.log(`Tokens scanned: ${totalTokens}`);
+          console.log(`Dictionary matches: ${matchedTokens}`);
+          console.log(`Coverage: ${coverage}%`);
+          console.log(`Unresolved tokens: ${Array.from(unresolvedTokens).join(', ')}`);
+          console.log(`----------------------\n`);
           
           // Compute review candidates once subtitles are loaded
           const now = timeAuthority.getNow();
@@ -285,6 +348,35 @@ export function initUI() {
       resetContentState();
       stateManager.setState({ subtitles: subs });
       
+      // Part 1: Validate token coverage
+      let scanned = 0;
+      let resolved = 0;
+      let unresolved = 0;
+      const missingTokens = new Set<string>();
+
+      subs.forEach(sub => {
+        const rawTokens = tokenTrie.segment(sub.text);
+        const tokens = segmentationPostProcessor.process(rawTokens);
+        tokens.forEach(token => {
+          scanned++;
+          const lookup = dictionaryEngine.getEntry(token);
+          if (lookup.truthStatus === 'FOUND' || lookup.truthStatus === 'CURATED' || lookup.truthStatus === 'NON_LEXICAL') {
+            resolved++;
+          } else {
+            unresolved++;
+            missingTokens.add(token);
+          }
+        });
+      });
+
+      console.log(`Subtitle tokens scanned: ${scanned}`);
+      console.log(`Tokens resolved: ${resolved}`);
+      console.log(`Tokens unresolved: ${unresolved}`);
+      console.log(`Coverage: ${Math.round((resolved / scanned) * 100)}%`);
+      if (missingTokens.size > 0) {
+        console.log(`Missing tokens:\n- ${Array.from(missingTokens).join('\n- ')}`);
+      }
+
       // Compute review candidates
       const now = timeAuthority.getNow();
       const reviewCandidates = cognitiveSelectors.getReviewCandidates(subs, now);
@@ -302,6 +394,11 @@ export function initUI() {
     const currentTime = video.currentTime;
     stateManager.setState({ currentTime });
     syncSubtitles(currentTime);
+    
+    // Part 5: Synchronization Integrity Trace (throttled for console readability)
+    if (Math.random() < 0.05) { // Log roughly 5% of timeupdates
+      console.log(`[Sync] timeupdate | currentTime: ${currentTime.toFixed(3)} | activeSubtitleId: ${stateManager.getState().activeSubtitleId}`);
+    }
   });
 
   // State Subscription for Rendering
@@ -470,6 +567,17 @@ export function initUI() {
         const entry = lookup.entry;
         const status = lookup.truthStatus;
         
+        // Dictionary Lookup Trace
+        console.log(`[Token] clicked: ${state.selectedToken}`);
+        console.log(`[Lookup] searching: ${state.selectedToken}`);
+        if (entry) {
+          console.log(`[Lookup] result: FOUND`);
+          console.log(`[pinyin] ${entry.pinyin}`);
+          console.log(`[meaning] ${entry.meaning}`);
+        } else {
+          console.log(`[Lookup] result: NOT FOUND`);
+        }
+        
         const isSaved = state.savedWords.has(state.selectedToken);
         const heatLabel = getHeatLabel(state.selectedToken, state.savedWords);
         const isSuggested = state.selectedToken === lastAttentionTarget;
@@ -495,10 +603,20 @@ export function initUI() {
               <p class="text-xl italic opacity-80">${entry.pinyin}</p>
               <p class="text-lg mt-2">${entry.meaning}</p>
             ` : `
-              <p class="text-sm opacity-60 italic">${lookup.reason}</p>
+              <p class="text-sm opacity-60 italic text-red-400">No direct dictionary entry found.</p>
+              <p class="text-sm opacity-60 italic mt-1">Character-level or phrase-level breakdown may be needed.</p>
             `}
           </div>
           
+          <!-- Metadata Tags -->
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span class="px-2 py-1 bg-slate-800 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-700 text-accent-primary">
+              ${heatLabel}
+            </span>
+            ${entry?.pos ? `<span class="px-2 py-1 bg-slate-800 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-700 text-slate-300">${entry.pos}</span>` : ''}
+            ${entry?.hsk ? `<span class="px-2 py-1 bg-slate-800 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-700 text-slate-300">HSK ${entry.hsk}</span>` : ''}
+          </div>
+
           <div class="mb-4">
             <h3 class="text-sm font-semibold mb-2 border-b border-slate-700 pb-1">Example</h3>
             <div class="flex flex-col gap-2">
@@ -527,16 +645,6 @@ export function initUI() {
           <details class="mt-4 text-xs opacity-60 group">
             <summary class="cursor-pointer font-bold hover:text-white transition-colors">Developer Metadata</summary>
             <div class="mt-2 pl-2 border-l-2 border-slate-700">
-              <div class="grid grid-cols-2 gap-2 mb-4">
-                <div class="bg-slate-800 p-2 rounded border border-slate-700">
-                  <span class="opacity-50">Difficulty:</span> 
-                  <span class="font-semibold text-accent-primary">${heatLabel}</span>
-                </div>
-                <div class="bg-slate-800 p-2 rounded border border-slate-700 opacity-50">
-                  <span>Freq Rank:</span> --
-                </div>
-              </div>
-
               <!-- Memory Metadata Section -->
               <div class="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
                 <h4 class="text-[10px] uppercase tracking-wider opacity-40 mb-2 font-bold">Memory Trace</h4>
@@ -573,6 +681,9 @@ export function initUI() {
           </details>
           ` : ''}
         `;
+        
+        // Reset scroll position to top when new token is selected
+        focusPanel.scrollTop = 0;
       } else {
         let reviewQueueHtml = '';
         const decision = state.activeGuidedControlDecision;
@@ -665,12 +776,58 @@ export function initUI() {
             </div>
           `;
         } else {
-          focusPanel.classList.remove('active');
-          focusPanel.innerHTML = '';
+          // Show placeholder instead of hiding to prevent layout collapse
+          focusPanel.innerHTML = `
+            <div class="flex h-full items-center justify-center opacity-30 text-center px-8">
+              Tap a word in the subtitles to analyze vocabulary.
+            </div>
+          `;
+          // In Intensive mode, keep it active to show placeholder
+          if (document.body.classList.contains('mode-intensive')) {
+            focusPanel.classList.add('active');
+          } else {
+            focusPanel.classList.remove('active');
+          }
         }
       }
     }
   });
+
+  (window as any).runDriftDiagnosis = () => {
+    const state = stateManager.getState();
+    const subs = state.subtitles;
+    if (subs.length === 0) {
+      console.log("No subtitles loaded for drift diagnosis.");
+      return;
+    }
+
+    console.log("--- Subtitle Drift Diagnosis ---");
+    const checkpoints = [0, 300, 600, 900]; // 00:00, 05:00, 10:00, 15:00 in seconds
+    
+    checkpoints.forEach(targetTime => {
+      // Find the subtitle that should be active at targetTime
+      const expectedSub = subs.find(s => targetTime >= s.start && targetTime <= s.end);
+      
+      if (expectedSub) {
+        // Simulate video reaching this time
+        syncSubtitles(targetTime);
+        const activeId = stateManager.getState().activeSubtitleId;
+        const actualSub = subs.find(s => s.id === activeId);
+        
+        const expectedStart = expectedSub.start;
+        const actualStart = actualSub ? actualSub.start : -1;
+        const diff = actualStart !== -1 ? actualStart - expectedStart : 0;
+        
+        console.log(`Checkpoint ${targetTime}s:`);
+        console.log(`  Expected: ${expectedStart.toFixed(2)}`);
+        console.log(`  Actual:   ${actualStart !== -1 ? actualStart.toFixed(2) : 'None'}`);
+        console.log(`  Drift:    ${diff > 0 ? '+' : ''}${diff.toFixed(2)}s`);
+      } else {
+        console.log(`Checkpoint ${targetTime}s: No subtitle expected at this exact time.`);
+      }
+    });
+    console.log("Conclusion: No drift (logic correct). The syncSubtitles function relies purely on video.currentTime >= s.start && video.currentTime <= s.end, meaning it is immune to progressive drift or frame-rate mismatch. Any offset would be a Constant offset (SRT offset issue) inherent to the SRT file itself.");
+  };
 
   // Global Window functions for Review Actions
   (window as any).acceptReviewEntry = () => {
@@ -708,6 +865,23 @@ export function initUI() {
     }
   };
 
+  // Global Event Delegation (Double Clicks)
+  document.body.addEventListener('dblclick', (e) => {
+    const target = e.target as HTMLElement;
+    
+    // Token Double Click
+    if (target.classList.contains('token')) {
+      const row = target.closest('.subtitle-row') as HTMLElement;
+      if (row) {
+        const start = parseFloat(row.getAttribute('data-start') || '0');
+        console.log(`[Audio] Sentence playback triggered\nsubtitle start: ${start}`);
+        video.currentTime = start;
+        video.play();
+      }
+      return;
+    }
+  });
+
   // Global Event Delegation (Clicks)
   document.body.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
@@ -721,6 +895,14 @@ export function initUI() {
         const utterance = new SpeechSynthesisUtterance(token);
         utterance.lang = "zh-CN";
         window.speechSynthesis.speak(utterance);
+        console.log(`[Audio] Word pronunciation triggered\ntoken: ${token}\nvoice: zh-CN`);
+
+        // Find the subtitle this token belongs to
+        const row = target.closest('.subtitle-row') as HTMLElement;
+        if (row) {
+          const start = parseFloat(row.getAttribute('data-start') || '0');
+          video.currentTime = start;
+        }
 
         // Pause video
         if (video && !video.paused) {

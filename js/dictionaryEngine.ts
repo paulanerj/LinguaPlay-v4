@@ -97,8 +97,10 @@ class DictionaryEngine {
         throw new Error("Invalid lexicon format: Root is not an object.");
       }
 
-      console.log(`Lexicon Loaded: ${accepted} accepted, ${rejected} rejected. Total: ${this.dictionary.size}`);
+      console.log(`[Lexicon] Entries loaded: ${this.dictionary.size}`);
       this.rebuildTrie();
+      console.log(`[Lexicon] Trie nodes created: ${tokenTrie.getNodeCount()}`);
+      console.log(`[Lexicon] Mode: FULL`);
       stateManager.setState({ lexiconLoaded: true, lexiconMode: LexiconMode.FULL });
     } catch (e) {
       console.error("Lexicon Error:", e);

@@ -65,7 +65,27 @@ export class TokenTrie {
         i += longestMatch.length;
       } else {
         // Fallback to single character if no match found
-        tokens.push(text[i]);
+        const char = text[i];
+        const isChinese = /[\u4e00-\u9fa5]/.test(char);
+        
+        // Pass 4: Fallback strategy - prefer 2-character chunks over single characters when plausible
+        if (isChinese && i + 1 < text.length) {
+            const nextChar = text[i+1];
+            const isNextChinese = /[\u4e00-\u9fa5]/.test(nextChar);
+            if (isNextChinese) {
+                // Group 2 characters
+                const chunk = char + nextChar;
+                tokens.push(chunk);
+                console.log(`[Tokenizer] Unresolved fallback (2-char): ${chunk}`);
+                i += 2;
+                continue;
+            }
+        }
+        
+        tokens.push(char);
+        if (isChinese) {
+            console.log(`[Tokenizer] Unresolved fallback (1-char): ${char}`);
+        }
         i++;
       }
     }
@@ -78,6 +98,19 @@ export class TokenTrie {
    */
   clear() {
     this.root = new TrieNode();
+  }
+
+  /**
+   * PURPOSE: Count total nodes in the trie.
+   */
+  getNodeCount(): number {
+    let count = 0;
+    const traverse = (node: TrieNode) => {
+      count++;
+      node.children.forEach(traverse);
+    };
+    traverse(this.root);
+    return count;
   }
 }
 

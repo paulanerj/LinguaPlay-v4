@@ -15,6 +15,44 @@ import { initUI } from './uiBindings.ts';
 import { parseSRT } from './subtitleParser.ts';
 import { stateManager } from './state.ts';
 import { dictionaryEngine } from './dictionaryEngine.ts';
+import { tokenTrie } from './tokenTrie.ts';
+import { segmentationPostProcessor } from './segmentationPostProcessor.ts';
+
+function runSegmentationTest() {
+  console.log("\n--- Segmentation Validation Test ---");
+  const testLines = [
+    "我希望那家饭馆不用排队。",
+    "走吧，我已经饿了。",
+    "今晚可能很忙。",
+    "你不用担心。",
+    "我觉得这个办法可以。",
+    "如果人太多，我们也可以先去附近走一走。"
+  ];
+
+  testLines.forEach(line => {
+    const rawTokens = tokenTrie.segment(line);
+    const tokens = segmentationPostProcessor.process(rawTokens);
+    
+    let hits = 0;
+    let misses = 0;
+    
+    tokens.forEach(token => {
+      const isChinese = /[\u4e00-\u9fa5]/.test(token);
+      if (isChinese) {
+        if (dictionaryEngine.getEntry(token).entry) {
+          hits++;
+        } else {
+          misses++;
+        }
+      }
+    });
+
+    console.log(`[Test] Raw line: ${line}`);
+    console.log(`[Test] Segmented tokens: ${tokens.join(' | ')}`);
+    console.log(`[Test] Dictionary hits: ${hits}, misses: ${misses}\n`);
+  });
+  console.log("------------------------------------\n");
+}
 
 async function bootstrap() {
   console.log("LinguaPlay Initializing...");
@@ -24,6 +62,9 @@ async function bootstrap() {
 
   // 2. Load Lexicon (Phase 3 Task)
   await dictionaryEngine.loadLargeLexicon('/data/cn_lexicon_large.json');
+
+  // Run Segmentation Test
+  runSegmentationTest();
 
   // 3. Initial Demo Load
   document.getElementById('btn-demo')?.click();

@@ -23,8 +23,21 @@ export class SegmentationPostProcessor {
     ["中国人", true],
     ["为什么", true],
     ["是什么", true],
-    ["常常", true], // Moved from generic repeated-character heuristic
-    ["丽丽", true]  // Moved from generic repeated-character heuristic
+    ["常常", true],
+    ["丽丽", true],
+    ["不用", true],
+    ["已经", true],
+    ["还是", true],
+    ["还有", true],
+    ["有点", true],
+    ["一起", true],
+    ["怎么样", true],
+    ["没关系", true],
+    ["对不起", true],
+    ["因为", true],
+    ["如果", true],
+    ["然后", true],
+    ["马上", true]
   ]);
 
   // TASK 2 — Phrase Priority Weighting

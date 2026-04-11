@@ -38,7 +38,7 @@ body {
 }
 
 #video-surface {
-  flex: 0 0 70vh;
+  flex: 0 0 55vh;
   position: relative;
   display: flex;
   justify-content: center;
@@ -53,8 +53,9 @@ video {
 }
 
 #controls-bar {
+  height: 48px;
   background: #1e293b;
-  padding: 0.75rem 1rem;
+  padding: 0 1rem;
   display: flex;
   gap: 1rem;
   align-items: center;
@@ -66,8 +67,10 @@ video {
 #workspace {
   flex: 1;
   display: flex;
+  flex-direction: column;
   overflow: hidden;
   background: var(--bg-primary);
+  min-height: 0;
 }
 
 #transcript-panel {
@@ -76,7 +79,8 @@ video {
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.75rem;
+  min-height: 0;
 }
 
 #focus-panel {
@@ -84,8 +88,9 @@ video {
   flex: 1;
   overflow-y: auto;
   background: rgba(15, 23, 42, 0.95);
-  border-left: 1px solid #334155;
+  border-top: 1px solid #334155;
   padding: 1.5rem;
+  min-height: 0;
 }
 
 #focus-panel.active {
@@ -101,7 +106,7 @@ body.mode-cinema #workspace {
 }
 
 body.mode-study #video-surface {
-  flex: 0 0 70vh;
+  flex: 0 0 55vh;
 }
 body.mode-study #transcript-panel {
   display: flex;
@@ -111,51 +116,66 @@ body.mode-study #focus-panel {
 }
 
 body.mode-intensive #video-surface {
-  flex: 0 0 70vh;
+  flex: 0 0 55vh;
 }
 body.mode-intensive #workspace {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
 }
 body.mode-intensive #transcript-panel {
   display: flex;
 }
-/* focus-panel is handled by .active class in Intensive mode */
 
 /* Multi-line Overlay */
 #subtitle-display {
   position: absolute;
-  bottom: 5%;
+  bottom: 8%;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
   pointer-events: none;
+  z-index: 10;
 }
 
 .subtitle-row {
   display: inline-block;
   background: var(--sub-bg);
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.25rem;
   border-radius: 0.5rem;
-  font-size: 1.25rem;
-  line-height: 1.75rem;
+  font-size: 32px;
+  line-height: 1.4;
+  letter-spacing: 0.03em;
   pointer-events: auto;
   cursor: pointer;
   transition: all 0.2s ease;
+  text-align: center;
+}
+
+.subtitle-row .pinyin {
+  font-size: 22px;
+  opacity: 0;
+  display: block;
+  margin-bottom: 2px;
+  transition: opacity 0.2s;
+}
+
+.subtitle-row:hover .pinyin {
+  opacity: 0.8;
 }
 
 .overlay-past {
   opacity: 0.4;
   transform: scale(0.9);
-  font-size: 1rem;
+  font-size: 24px;
 }
 
 .overlay-active {
   opacity: 1;
   transform: scale(1);
   border: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
 /* Transcript Rows */
@@ -163,9 +183,33 @@ body.mode-intensive #transcript-panel {
   background: transparent;
   border-left: 3px solid transparent;
   border-radius: 0;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
   text-align: left;
-  font-size: 1.125rem;
+}
+
+.transcript-row .chinese-line {
+  justify-content: flex-start !important;
+}
+
+.transcript-row .token {
+  font-size: 24px;
+}
+
+.transcript-row .pinyin {
+  display: none !important; /* Hide individual token pinyin in transcript */
+}
+
+.transcript-row .pinyin-line {
+  display: block !important; /* Show full line pinyin in transcript */
+  text-align: left !important;
+  font-size: 18px;
+  opacity: 0.6;
+}
+
+.transcript-row .timestamp {
+  font-size: 14px;
+  opacity: 0.4;
+  margin-right: 8px;
 }
 
 .transcript-row:hover {
@@ -180,9 +224,10 @@ body.mode-intensive #transcript-panel {
 /* Example Rows */
 .example-row {
   background: rgba(255,255,255,0.05);
-  font-size: 1rem;
-  padding: 0.5rem;
+  font-size: 1.125rem;
+  padding: 0.75rem;
   text-align: left;
+  border-radius: 0.25rem;
 }
 
 .example-row:hover {
@@ -258,7 +303,7 @@ body.mode-intensive #transcript-panel {
 .ui-btn {
   background: #334155;
   color: white;
-  padding: 0.25rem 0.75rem;
+  padding: 0.5rem 1rem;
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -266,13 +311,29 @@ body.mode-intensive #transcript-panel {
   letter-spacing: 0.05em;
   transition: all 0.2s;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.ui-btn:hover {
+.ui-btn-compact {
+  background: #334155;
+  color: white;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.ui-btn:hover, .ui-btn-compact:hover {
   background: #475569;
 }
 
-.ui-btn:active {
+.ui-btn:active, .ui-btn-compact:active {
   transform: translateY(1px);
 }
 
@@ -300,29 +361,70 @@ body.mode-intensive #transcript-panel {
 
 /* Responsive Layout */
 @media (max-width: 768px) {
+  #video-surface {
+    flex: 0 0 48vh;
+  }
+
   body.mode-study #video-surface,
   body.mode-intensive #video-surface {
-    flex: 0 0 42vh;
+    flex: 0 0 48vh;
   }
 
-  #controls-bar {
-    flex-wrap: wrap;
+  .subtitle-row {
+    font-size: 28px;
+    padding: 0.4rem 1rem;
   }
 
-  body.mode-intensive #workspace {
-    display: flex;
-    flex-direction: column;
+  .subtitle-row .pinyin {
+    font-size: 20px;
   }
 
-  #transcript-panel {
-    max-height: 35vh;
-    overflow-y: auto;
+  .transcript-row .token {
+    font-size: 22px;
+  }
+
+  .transcript-row .pinyin-line {
+    font-size: 16px;
   }
 
   #focus-panel {
-    width: 100%;
-    max-width: none;
-    border-left: none;
-    border-top: 1px solid #334155;
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  #video-surface {
+    flex: 0 0 50vh;
+  }
+  
+  body.mode-study #video-surface,
+  body.mode-intensive #video-surface {
+    flex: 0 0 50vh;
+  }
+
+  .subtitle-row {
+    font-size: 30px;
+  }
+
+  body.mode-intensive #workspace {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #focus-panel {
+    border-top: none;
+    border-left: 1px solid #334155;
+  }
+}
+
+@media (min-width: 1025px) {
+  body.mode-intensive #workspace {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #focus-panel {
+    border-top: none;
+    border-left: 1px solid #334155;
   }
 }
