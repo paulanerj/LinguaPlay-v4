@@ -74,13 +74,19 @@ video {
 }
 
 #transcript-panel {
-  flex: 1;
+  flex: 0 0 auto;
+  max-height: 14vh;
   overflow-y: auto;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   min-height: 0;
+  scrollbar-width: none; /* Firefox */
+}
+
+#transcript-panel::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 #focus-panel {
@@ -91,6 +97,11 @@ video {
   border-top: 1px solid #334155;
   padding: 1.5rem;
   min-height: 0;
+  scrollbar-width: none; /* Firefox */
+}
+
+#focus-panel::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 #focus-panel.active {
@@ -119,16 +130,16 @@ body.mode-intensive #video-surface {
   flex: 0 0 55vh;
 }
 body.mode-intensive #workspace {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
 }
 body.mode-intensive #transcript-panel {
   display: flex;
 }
 body.mode-intensive #focus-panel {
   display: block;
-  border-top: none;
-  border-left: 1px solid #334155;
+  border-top: 1px solid #334155;
+  border-left: none;
 }
 
 /* Multi-line Overlay */
@@ -190,6 +201,8 @@ body.mode-intensive #focus-panel {
   border-radius: 0;
   padding: 0.75rem 1rem;
   text-align: left;
+  opacity: 0.5;
+  transition: opacity 0.2s;
 }
 
 .transcript-row .chinese-line {
@@ -219,11 +232,19 @@ body.mode-intensive #focus-panel {
 
 .transcript-row:hover {
   background: rgba(255,255,255,0.05);
+  opacity: 0.8;
 }
 
 .transcript-row.active {
   border-left-color: var(--accent-primary) !important;
   background: rgba(56, 189, 248, 0.1);
+  opacity: 1;
+  font-weight: 500;
+}
+
+.active-token {
+  background: rgba(255,255,255,0.15);
+  border-radius: 6px;
 }
 
 /* Example Rows */
@@ -378,11 +399,6 @@ body.mode-intensive #focus-panel {
   body.mode-intensive #workspace {
     display: flex;
     flex-direction: column;
-  }
-
-  body.mode-intensive #transcript-panel {
-    max-height: 35vh;
-    flex: 0 0 auto;
   }
 
   body.mode-intensive #focus-panel {

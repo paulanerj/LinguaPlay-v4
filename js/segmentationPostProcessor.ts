@@ -37,7 +37,12 @@ export class SegmentationPostProcessor {
     ["因为", true],
     ["如果", true],
     ["然后", true],
-    ["马上", true]
+    ["马上", true],
+    ["排队", true],
+    ["饭馆", true],
+    ["希望", true],
+    ["觉得", true],
+    ["准备", true]
   ]);
 
   // TASK 2 — Phrase Priority Weighting

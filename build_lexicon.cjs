@@ -62,5 +62,5 @@ data.forEach(entry => {
   }
 });
 
-fs.writeFileSync('data/cn_lexicon_large.json', JSON.stringify(lexicon, null, 2));
+fs.writeFileSync('public/data/cn_lexicon_large.json', JSON.stringify(lexicon, null, 2));
 console.log(`Lexicon built with ${Object.keys(lexicon).length} unique simplified entries.`);

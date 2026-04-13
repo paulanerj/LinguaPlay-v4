@@ -38,11 +38,15 @@ export function renderSubtitleRow(subtitle: Subtitle, savedWords: Set<string>, e
 
     const stack = `${heatClass.replace('heat-', '')}`;
     const pinyin = result.entry?.pinyin || '';
+    const isPhrase = token.length > 1 ? 'phrase' : '';
+    const hskTag = result.entry?.hsk ? `<span class="text-[0.4em] opacity-50 ml-0.5 align-top">(HSK${result.entry.hsk})</span>` : '';
+    const freqTag = result.entry?.frequencyBand ? `<span class="text-[0.4em] opacity-50 ml-0.5 align-top">(${result.entry.frequencyBand})</span>` : '';
+    const tags = hskTag + freqTag;
     
     return `
       <span class="token-container inline-flex flex-col items-center">
         <span class="pinyin text-[0.6em] opacity-0 group-hover:opacity-80 transition-opacity leading-none mb-1">${pinyin}</span>
-        <span class="token ${isSaved} ${heatClass} ${truthClass}" data-token="${token}" data-stack="${stack}">${token}</span>
+        <span class="token ${isSaved} ${heatClass} ${truthClass} ${isPhrase}" data-token="${token}" data-stack="${stack}">${token}${tags}</span>
       </span>
     `;
   }).join('');
@@ -59,12 +63,20 @@ export function renderSubtitleRow(subtitle: Subtitle, savedWords: Set<string>, e
   // Generate a full line pinyin for the row (used in transcript)
   const fullPinyin = tokens.map(t => dictionaryEngine.getEntry(t).entry?.pinyin || '').join(' ');
 
+  const isOverlay = extraClass.includes('overlay-active');
+  const justifyClass = isOverlay ? 'justify-center' : 'justify-start';
+  const textClass = isOverlay ? 'text-center' : 'text-left';
+  const replayBtnHtml = isOverlay ? '' : `<button class="replay-btn text-slate-500 hover:text-accent-primary transition-colors mt-1 shrink-0" onclick="event.stopPropagation(); window.replayFrom(${subtitle.start})">▶</button>`;
+
   return `
-    <div class="subtitle-row group ${extraClass} ${rowHeatClass}" data-id="${subtitle.id}" data-start="${subtitle.start}">
-      <div class="chinese-line flex flex-wrap justify-center items-end gap-x-1">
-        ${tokenHtml}
+    <div class="subtitle-row group ${extraClass} ${rowHeatClass} flex items-start gap-2" data-id="${subtitle.id}" data-start="${subtitle.start}">
+      ${replayBtnHtml}
+      <div class="flex-1">
+        <div class="chinese-line flex flex-wrap ${justifyClass} items-end gap-x-1">
+          ${tokenHtml}
+        </div>
+        <div class="pinyin-line hidden ${textClass} mt-1 opacity-60 font-light italic">${fullPinyin}</div>
       </div>
-      <div class="pinyin-line hidden text-center mt-1 opacity-60 font-light italic">${fullPinyin}</div>
     </div>
   `;
 }

@@ -314,9 +314,6 @@ export function initUI() {
     video.src = "https://www.w3schools.com/html/mov_bbb.mp4";
     
     try {
-      // Load demo lexicon first
-      await dictionaryEngine.loadLargeLexicon('/data/demo_lexicon.json');
-
       // Load demo subtitles
       const response = await fetch('/data/demo_subtitles.srt');
       if (!response.ok) throw new Error("Failed to load demo subtitles");
@@ -380,6 +377,15 @@ export function initUI() {
   });
 
   // State Subscription for Rendering
+  let lastUserScroll = 0;
+  transcriptPanel.addEventListener('scroll', () => {
+    lastUserScroll = Date.now();
+  });
+
+  function canAutoScroll() {
+    return Date.now() - lastUserScroll > 3000;
+  }
+
   stateManager.subscribe((state) => {
     // Update Lexicon Status
     const statusEl = document.getElementById('status-lexicon');
@@ -456,7 +462,17 @@ export function initUI() {
         const activeRow = transcriptPanel.querySelector(`.transcript-row[data-id="${state.activeSubtitleId}"]`);
         if (activeRow) {
           activeRow.classList.add('active');
-          activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (canAutoScroll()) {
+            const rect = activeRow.getBoundingClientRect();
+            const panelRect = transcriptPanel.getBoundingClientRect();
+            const isVisible = (rect.top >= panelRect.top) && (rect.bottom <= panelRect.bottom);
+            if (!isVisible) {
+              console.log('[Scroll] Auto-scroll triggered');
+              activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          } else {
+            console.log('[Scroll] Auto-scroll suppressed (user scrolling)');
+          }
         }
 
         // Instrument Exposure & Record Memory: Passive View for all tokens in the active row
@@ -568,6 +584,17 @@ export function initUI() {
         const examples = state.subtitles.filter(s => s.text.includes(state.selectedToken!)).slice(0, 1);
         const examplesHtml = examples.map(s => renderSubtitleRow(s, state.savedWords, 'example-row')).join('');
 
+        let sentenceTranslation = '';
+        if (examples.length > 0) {
+          const rawTokens = tokenTrie.segment(examples[0].text);
+          const phraseTokens = segmentationPostProcessor.process(rawTokens);
+          sentenceTranslation = phraseTokens.map(t => {
+            const res = dictionaryEngine.getEntry(t);
+            const meaning = res.entry?.meaning ? res.entry.meaning.split(';')[0].trim() : t;
+            return meaning;
+          }).join(' ');
+        }
+
         focusPanel.innerHTML = `
           ${isSuggested ? '<div class="text-[10px] uppercase tracking-widest text-accent-primary mb-1 font-bold opacity-80">Suggested Focus</div>' : ''}
           <div class="flex justify-between items-start mb-4 pr-6">
@@ -600,6 +627,19 @@ export function initUI() {
             <div class="flex flex-col gap-2">
               ${examples.length > 0 ? examplesHtml : '<div class="text-sm opacity-40 italic p-2 border border-dashed border-slate-700 rounded text-center">No examples available.</div>'}
             </div>
+            ${examples.length > 0 ? `
+            <div class="mt-2 text-sm opacity-70 italic text-slate-300">
+              ${sentenceTranslation}
+            </div>
+            <div class="flex gap-2 mt-3">
+              <button class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold transition-colors flex items-center gap-1" onclick="window.speakSentence('${examples[0].text.replace(/'/g, "\\'").replace(/\n/g, ' ')}')">
+                🔊 Sentence
+              </button>
+              <button class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold transition-colors flex items-center gap-1" onclick="window.replayFrom(${examples[0].start}, ${examples[0].end})">
+                ▶ Replay Line
+              </button>
+            </div>
+            ` : ''}
           </div>
 
           <!-- Record & Compare MVP -->
@@ -843,22 +883,26 @@ export function initUI() {
     }
   };
 
+  (window as any).replayFrom = (start: number) => {
+    console.log('[Transcript] Replay line triggered');
+    if (video) {
+      video.currentTime = start;
+      video.play();
+    }
+  };
+
   // Global Event Delegation (Double Clicks)
   document.body.addEventListener('dblclick', (e) => {
-    const target = e.target as HTMLElement;
-    
-    // Token Double Click
-    if (target.classList.contains('token')) {
-      const row = target.closest('.subtitle-row') as HTMLElement;
-      if (row) {
-        const start = parseFloat(row.getAttribute('data-start') || '0');
-        console.log(`[Audio] Sentence playback triggered\nsubtitle start: ${start}`);
-        video.currentTime = start;
-        video.play();
-      }
-      return;
-    }
+    // Double click behavior removed per directive
   });
+
+  (window as any).speakSentence = (text: string) => {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "zh-CN";
+    window.speechSynthesis.speak(utterance);
+    console.log(`[Audio] Sentence pronunciation triggered\ntext: ${text}\nvoice: zh-CN`);
+  };
 
   // Global Event Delegation (Clicks)
   document.body.addEventListener('click', (e) => {
@@ -868,6 +912,12 @@ export function initUI() {
     if (target.classList.contains('token')) {
       const token = target.getAttribute('data-token');
       if (token) {
+        console.log(`[Token] Token clicked: ${token}`);
+        
+        // Visual feedback
+        document.querySelectorAll('.active-token').forEach(el => el.classList.remove('active-token'));
+        target.classList.add('active-token');
+
         // Audio Interaction Recovery: Play pronunciation
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(token);
@@ -898,19 +948,12 @@ export function initUI() {
         });
 
         engineLoop.processEvent({ type: 'TOKEN_CLICK', token });
+        
+        // Scroll study panel to top
+        if (focusPanel) {
+          focusPanel.scrollTop = 0;
+        }
       }
-      return;
-    }
-
-    // Transcript / Example Row Click (Seek)
-    const row = target.closest('.subtitle-row') as HTMLElement;
-    if (row && (row.classList.contains('transcript-row') || row.classList.contains('example-row'))) {
-      const start = parseFloat(row.getAttribute('data-start') || '0');
-      console.log(`[Seek] Clicked subtitle start: ${start}`);
-      console.log(`[Seek] Video currentTime before: ${video.currentTime}`);
-      video.currentTime = start;
-      video.play();
-      console.log(`[Seek] Video currentTime after: ${video.currentTime}`);
       return;
     }
 
@@ -965,15 +1008,17 @@ export function initUI() {
   // Quick Preview Tooltip (Hover Delegation)
   document.body.addEventListener('mouseover', (e) => {
     const target = e.target as HTMLElement;
-    if (target.classList.contains('token')) {
+    const tokenEl = target.closest('.token') as HTMLElement;
+    if (tokenEl) {
       clearTimeout(tooltipTimeout);
-      showTooltip(target);
+      showTooltip(tokenEl);
     }
   });
 
   document.body.addEventListener('mouseout', (e) => {
     const target = e.target as HTMLElement;
-    if (target.classList.contains('token')) {
+    const tokenEl = target.closest('.token') as HTMLElement;
+    if (tokenEl) {
       tooltipTimeout = setTimeout(hideTooltip, 100);
     }
   });
@@ -983,10 +1028,11 @@ export function initUI() {
   
   document.body.addEventListener('touchstart', (e) => {
     const target = e.target as HTMLElement;
-    if (target.classList.contains('token')) {
+    const tokenEl = target.closest('.token') as HTMLElement;
+    if (tokenEl) {
       clearTimeout(touchTimeout);
       touchTimeout = setTimeout(() => {
-        showTooltip(target);
+        showTooltip(tokenEl);
       }, 400); // 400ms long-press
     }
   }, { passive: true });

@@ -13,14 +13,19 @@ global.fetch = async (url: string | Request | URL, options?: RequestInit) => {
     const content = fs.readFileSync(filePath, 'utf-8');
     return new Response(content, { status: 200, statusText: 'OK' });
   }
+  if (urlStr === '/data/cn_lexicon_large.json') {
+    const filePath = process.cwd() + '/public/data/cn_lexicon_large.json';
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return new Response(content, { status: 200, statusText: 'OK' });
+  }
   return originalFetch(url, options);
 };
 
-async function runAudit(srtPath: string, lexiconPath: string) {
+async function runAudit(srtPath: string) {
   console.log(`\n--- Running Audit for ${srtPath} ---`);
   
   // Load lexicon
-  await dictionaryEngine.loadLargeLexicon(lexiconPath);
+  await dictionaryEngine.initialize();
   
   // Load SRT
   const srtText = fs.readFileSync(srtPath, 'utf-8');
@@ -72,11 +77,8 @@ async function runAudit(srtPath: string, lexiconPath: string) {
 }
 
 async function main() {
-  // Use the newly built lexicon
-  const lexiconUrl = 'file://' + process.cwd() + '/data/cn_lexicon_large.json';
-  
   // 1. Demo Subtitles
-  await runAudit('public/data/demo_subtitles.srt', lexiconUrl);
+  await runAudit('public/data/demo_subtitles.srt');
   
   // 2. Real user subtitle file (we can use the same demo or create a new one to simulate)
   // Let's create a small real user subtitle file to test.
@@ -97,7 +99,7 @@ async function main() {
 我觉得这个办法可以。
 `;
   fs.writeFileSync('data/real_user.srt', realUserSrt);
-  await runAudit('data/real_user.srt', lexiconUrl);
+  await runAudit('data/real_user.srt');
 }
 
 main().catch(console.error);

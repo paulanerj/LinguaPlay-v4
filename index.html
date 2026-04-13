@@ -9,13 +9,6 @@
   <body>
     <div id="app-container">
       <div id="main-content">
-        <div id="video-surface">
-          <video controls>
-            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-          </video>
-          <div id="subtitle-display" class="hidden"></div>
-        </div>
-        
         <div id="controls-bar" class="h-[48px] flex items-center justify-between px-4 bg-slate-800 border-y border-slate-700 shrink-0 z-20">
           <div class="flex items-center gap-3">
             <button id="btn-load-video" class="ui-btn-compact">Load Content</button>
@@ -38,6 +31,13 @@
               Dev Mode
             </label>
           </div>
+        </div>
+
+        <div id="video-surface">
+          <video controls>
+            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+          </video>
+          <div id="subtitle-display" class="hidden"></div>
         </div>
 
         <input type="file" id="input-video" accept="video/*" class="hidden">

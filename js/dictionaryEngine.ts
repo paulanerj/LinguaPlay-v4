@@ -29,6 +29,7 @@ export interface LexiconLookupResult {
 class DictionaryEngine {
   private dictionary: Map<string, DictEntry> = new Map();
   private curatedEntries: Map<string, DictEntry> = new Map();
+  public ready: boolean = false;
 
   constructor() {
     // Initial curated entries (High priority)
@@ -54,15 +55,17 @@ class DictionaryEngine {
    * PURPOSE: Merges large-scale lexicon with curated data.
    * CONTRACT: Never overwrites curated entries.
    */
-  async loadLargeLexicon(url: string) {
+  async initialize() {
+    console.log("[Lexicon] Loading dictionary...");
+    
     // Ensure curated entries populate dictionary BEFORE any external load
     this.curatedEntries.forEach((val, key) => {
       this.dictionary.set(key, val);
     });
 
     try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Lexicon load failed");
+      const response = await fetch("/data/cn_lexicon_large.json");
+      if (!response.ok) throw new Error(`Lexicon load failed: ${response.statusText}`);
       
       const data = await response.json();
       
@@ -97,17 +100,15 @@ class DictionaryEngine {
         throw new Error("Invalid lexicon format: Root is not an object.");
       }
 
-      console.log(`[Lexicon] Entries loaded: ${this.dictionary.size}`);
+      console.log("[Lexicon] Entries loaded:", this.dictionary.size);
       this.rebuildTrie();
-      console.log(`[Lexicon] Trie nodes created: ${tokenTrie.getNodeCount()}`);
-      console.log(`[Lexicon] Mode: FULL`);
+      console.log("[Lexicon] Trie nodes created:", tokenTrie.getNodeCount());
+      console.log("[Lexicon] Mode: FULL");
+      this.ready = true;
       stateManager.setState({ lexiconLoaded: true, lexiconMode: LexiconMode.FULL });
     } catch (e) {
       console.error("Lexicon Error:", e);
-      console.log("Fallback Mode: Using curated entries only.");
-      // Fallback to curated only
-      this.rebuildTrie();
-      stateManager.setState({ lexiconLoaded: true, lexiconMode: LexiconMode.FALLBACK }); // Reflect fallback success
+      throw e; // Hard fail on initialization
     }
   }
 
@@ -123,6 +124,10 @@ class DictionaryEngine {
    * Distinguishes between curated, found, missing, and non-lexical tokens.
    */
   getEntry(token: string): LexiconLookupResult {
+    if (!this.ready) {
+      throw new Error("Dictionary not initialized");
+    }
+
     if (!token || token.trim() === "") {
       return { entry: null, truthStatus: 'NON_LEXICAL', reason: "Empty token" };
     }
@@ -179,3 +184,11 @@ class DictionaryEngine {
 }
 
 export const dictionaryEngine = new DictionaryEngine();
+
+if (typeof window !== 'undefined') {
+  (window as any).debugDictionary = () => {
+    console.log(`Dictionary entries: ${dictionaryEngine['dictionary'].size}`);
+    console.log(`Trie nodes: ${tokenTrie.getNodeCount()}`);
+    console.log(`Memory usage: ${(performance as any).memory ? Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024) + ' MB' : 'N/A'}`);
+  };
+}

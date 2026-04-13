@@ -57,11 +57,18 @@ function runSegmentationTest() {
 async function bootstrap() {
   console.log("LinguaPlay Initializing...");
 
-  // 1. Initialize UI
-  const { loadDemo } = initUI();
+  // 1. Load Lexicon (Hard Initialization Gate)
+  try {
+    await dictionaryEngine.initialize();
+    console.log("[Lexicon] Initialization complete");
+  } catch (err) {
+    console.error("[Lexicon] Failed to load", err);
+    document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:20vh;'>Dictionary failed to load</h1>";
+    throw err;
+  }
 
-  // 2. Load Lexicon (Phase 3 Task)
-  await dictionaryEngine.loadLargeLexicon('/data/cn_lexicon_large.json');
+  // 2. Initialize UI
+  const { loadDemo } = initUI();
 
   // Run Segmentation Test
   runSegmentationTest();
