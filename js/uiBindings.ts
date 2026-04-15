@@ -29,6 +29,7 @@ export function initUI() {
 
   const btnLoadVideo = document.getElementById('btn-load-video')!;
   const btnLoadSRT = document.getElementById('btn-load-srt')!;
+  const btnLoadDemoExtended = document.getElementById('btn-load-demo-extended')!;
   const btnSlowMode = document.getElementById('btn-slow-mode');
   const viewModeSelect = document.getElementById('view-mode-select') as HTMLSelectElement;
   const toggleDevMode = document.getElementById('toggle-dev-mode') as HTMLInputElement;
@@ -47,6 +48,369 @@ export function initUI() {
   let currentVideoUrl: string | null = null;
   let currentSpeed = 1.0;
   let isDevMode = false;
+  let translationMode: 'natural' | 'literal' = 'natural';
+  let sentenceLabOriginalTokens: string[] = [];
+  let showSentenceStructure = false;
+
+  function initSentenceLab() {
+    const lab = document.getElementById('sentence-lab')!;
+    const header = document.getElementById('sentence-lab-header')!;
+    const workspace = document.getElementById('sentence-lab-workspace')!;
+    const btnTts = document.getElementById('btn-lab-tts')!;
+    const btnReplay = document.getElementById('btn-lab-replay')!;
+    const btnReset = document.getElementById('btn-lab-reset')!;
+    const btnShuffle = document.getElementById('btn-lab-shuffle')!;
+    const btnStructure = document.getElementById('btn-lab-structure')!;
+
+    if (!lab || !header || !workspace || !btnTts || !btnReplay) return;
+
+    header.addEventListener('click', () => {
+      lab.classList.toggle('collapsed');
+      console.log(`[SentenceLab] ${lab.classList.contains('collapsed') ? 'collapsed' : 'expanded'}`);
+    });
+
+    // Reset functionality
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        const state = stateManager.getState();
+        if (state.activeSubtitleId !== null) {
+          const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+          if (sub) {
+            updateSentenceLab(sub);
+            console.log('[SentenceLab] sentence reset');
+          }
+        }
+      });
+    }
+
+    // Shuffle functionality
+    if (btnShuffle) {
+      btnShuffle.addEventListener('click', () => {
+        const tokens = Array.from(workspace.querySelectorAll('.lab-token'));
+        const shuffled = [...tokens].sort(() => Math.random() - 0.5);
+        workspace.innerHTML = '';
+        shuffled.forEach(el => workspace.appendChild(el));
+        console.log('[SentenceLab] tokens shuffled');
+      });
+    }
+
+    // Structure toggle
+    if (btnStructure) {
+      btnStructure.addEventListener('click', () => {
+        showSentenceStructure = !showSentenceStructure;
+        btnStructure.classList.toggle('bg-blue-600/40', showSentenceStructure);
+        btnStructure.classList.toggle('text-blue-300', showSentenceStructure);
+        
+        const state = stateManager.getState();
+        if (state.activeSubtitleId !== null) {
+          const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+          if (sub) updateSentenceLab(sub);
+        }
+      });
+    }
+
+    // Token Tap Audio & Visual Feedback
+    workspace.addEventListener('click', (e) => {
+      const target = (e.target as HTMLElement).closest('.lab-token') as HTMLElement;
+      if (target) {
+        const token = target.getAttribute('data-token');
+        if (token) {
+          console.log(`[SentenceLab] token pronunciation: ${token}`);
+          
+          // Visual feedback
+          workspace.querySelectorAll('.active-token').forEach(el => el.classList.remove('active-token'));
+          target.classList.add('active-token');
+          setTimeout(() => target.classList.remove('active-token'), 300);
+
+          // Audio feedback (click)
+          playClickSound();
+
+          // Pause video to ensure Study Mode
+          if (video && !video.paused) {
+            video.pause();
+          }
+
+          // Pronunciation
+          const utterance = new SpeechSynthesisUtterance(token);
+          utterance.lang = "zh-CN";
+          window.speechSynthesis.speak(utterance);
+
+          // Phrase Explorer Integration
+          updatePhraseExplorer(token);
+        }
+      }
+    });
+
+    // Drag and drop logic
+    let draggedEl: HTMLElement | null = null;
+
+    workspace.addEventListener('pointerdown', (e) => {
+      const target = (e.target as HTMLElement).closest('.lab-token') as HTMLElement;
+      if (target) {
+        draggedEl = target;
+        draggedEl.classList.add('dragging');
+        draggedEl.setPointerCapture(e.pointerId);
+        console.log(`[SentenceLab] drag started: ${draggedEl.getAttribute('data-token')}`);
+      }
+    });
+
+    workspace.addEventListener('pointermove', (e) => {
+      if (!draggedEl) return;
+
+      const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.lab-token') as HTMLElement;
+      if (target && target !== draggedEl && target.parentElement === workspace) {
+        const rect = target.getBoundingClientRect();
+        const next = (e.clientX - rect.left) > (rect.width / 2);
+        if (next) {
+          target.after(draggedEl);
+        } else {
+          target.before(draggedEl);
+        }
+      }
+    });
+
+    workspace.addEventListener('pointerup', (e) => {
+      if (draggedEl) {
+        const tokens = Array.from(workspace.querySelectorAll('.lab-token')).map(el => el.getAttribute('data-token'));
+        const pos = tokens.indexOf(draggedEl.getAttribute('data-token')!);
+        console.log(`[SentenceLab] token moved: ${draggedEl.getAttribute('data-token')} → position ${pos}`);
+        draggedEl.classList.remove('dragging');
+        draggedEl.releasePointerCapture(e.pointerId);
+        draggedEl = null;
+      }
+    });
+
+    // Audio tools
+    btnTts.addEventListener('click', () => {
+      const tokens = Array.from(workspace.querySelectorAll('.lab-token')).map(el => el.getAttribute('data-token'));
+      const sentence = tokens.join('');
+      (window as any).speakSentence(sentence);
+    });
+
+    btnReplay.addEventListener('click', () => {
+      const state = stateManager.getState();
+      if (state.activeSubtitleId !== null) {
+        const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+        if (sub) {
+          (window as any).replayFrom(sub.start, sub.end);
+        }
+      }
+    });
+    
+    console.log('[SentenceLab] initialized');
+
+    // Explorer Close
+    const btnCloseExplorer = document.getElementById('btn-close-explorer');
+    if (btnCloseExplorer) {
+      btnCloseExplorer.addEventListener('click', () => {
+        document.getElementById('phrase-explorer')?.classList.add('hidden');
+      });
+    }
+
+    (window as any).explorePhrase = (token: string) => {
+      updatePhraseExplorer(token);
+    };
+  }
+
+  function updatePhraseExplorer(token: string) {
+    const explorer = document.getElementById('phrase-explorer');
+    const content = document.getElementById('phrase-explorer-content');
+    if (!explorer || !content) return;
+
+    const entry = dictionaryEngine.getEntry(token).entry;
+    if (!entry) {
+      explorer.classList.add('hidden');
+      return;
+    }
+
+    explorer.classList.remove('hidden');
+
+    // Mock data generation (Simple templates)
+    const examples = [
+      { zh: `${token}很好。`, en: `${token} is very good.` },
+      { zh: `我喜欢${token}。`, en: `I like ${token}.` },
+      { zh: `你${token}吗？`, en: `Are you ${token}?` }
+    ];
+
+    // Specific overrides for demo words
+    if (token === '不用') {
+      examples.length = 0;
+      examples.push(
+        { zh: "你不用担心。", en: "You don't need to worry." },
+        { zh: "今天不用上班。", en: "No need to work today." },
+        { zh: "你不用等我。", en: "You don't need to wait for me." }
+      );
+    }
+
+    const related = ['不需要', '没必要', '不必'].filter(w => w !== token);
+    const note = entry.pos === 'verb' ? `${token} is commonly used as a verb.` : `${token} is a common word in Mandarin.`;
+
+    content.innerHTML = `
+      <div class="mb-6">
+        <h2 class="text-3xl font-bold text-accent-primary mb-1">${token}</h2>
+        <p class="text-lg opacity-80 italic mb-2">${entry.pinyin}</p>
+        <p class="text-lg">${entry.meaning}</p>
+        <div class="flex gap-2 mt-4">
+          <button class="ui-btn-compact" onclick="window.speakSentence('${token}')">🔊 Pronounce</button>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <h3 class="explorer-section-title">Example Sentences</h3>
+        <div class="flex flex-col gap-3">
+          ${examples.map(ex => `
+            <div class="explorer-example-item">
+              <div class="flex justify-between items-start">
+                <div class="explorer-example-chinese">${ex.zh}</div>
+                <button class="text-xs opacity-40 hover:opacity-100" onclick="window.speakSentence('${ex.zh.replace(/'/g, "\\'")}')">🔊</button>
+              </div>
+              <div class="explorer-example-translation">${ex.en}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <h3 class="explorer-section-title">Usage Notes</h3>
+        <div class="explorer-note">
+          ${note}
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <h3 class="explorer-section-title">Related Words</h3>
+        <div class="flex flex-wrap">
+          ${related.map(word => `<span class="explorer-related-chip" onclick="window.explorePhrase('${word}')">${word}</span>`).join('')}
+        </div>
+      </div>
+    `;
+    
+    // Ensure Study Mode
+    const video = document.querySelector('video');
+    if (video && !video.paused) {
+      video.pause();
+    }
+  }
+
+  function playClickSound() {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
+
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.1);
+    } catch (e) {
+      console.warn('AudioContext not supported or blocked');
+    }
+  }
+
+  function updateSentenceLab(subtitle: any) {
+    const workspace = document.getElementById('sentence-lab-workspace');
+    const analysisEl = document.getElementById('sentence-analysis');
+    if (!workspace) return;
+
+    const rawTokens = tokenTrie.segment(subtitle.text);
+    const tokens = segmentationPostProcessor.process(rawTokens);
+    sentenceLabOriginalTokens = [...tokens];
+
+    // Simple Heuristics for Sentence Analysis
+    const analysis: { subject?: string; verb?: string; object?: string; result?: string } = {};
+    const structureMap = new Map<string, string>();
+
+    // Heuristic: First pronoun/noun is likely subject
+    // Heuristic: First verb after subject is likely main verb
+    let foundSubject = false;
+    let foundVerb = false;
+
+    tokens.forEach((token, idx) => {
+      const entry = dictionaryEngine.getEntry(token).entry;
+      const isPronoun = ['我', '你', '他', '她', '它', '我们', '你们', '他们'].includes(token);
+      const isVerb = entry?.meaning?.toLowerCase().includes('to ') || false;
+
+      if (!foundSubject && (isPronoun || idx === 0)) {
+        analysis.subject = token;
+        structureMap.set(token, 'SUBJ');
+        foundSubject = true;
+      } else if (foundSubject && !foundVerb && isVerb) {
+        analysis.verb = token;
+        structureMap.set(token, 'VERB');
+        foundVerb = true;
+      } else if (foundVerb && idx === tokens.length - 1) {
+        analysis.result = token;
+        structureMap.set(token, 'RESULT');
+      } else if (foundVerb) {
+        analysis.object = token;
+        structureMap.set(token, 'OBJECT');
+      }
+    });
+
+    if (analysisEl) {
+      const parts = [];
+      if (analysis.subject) parts.push(`Subject → ${analysis.subject}`);
+      if (analysis.verb) parts.push(`Verb → ${analysis.verb}`);
+      if (analysis.object) parts.push(`Object → ${analysis.object}`);
+      if (analysis.result) parts.push(`Result → ${analysis.result}`);
+      
+      if (parts.length > 0) {
+        analysisEl.innerHTML = parts.join(' | ');
+        analysisEl.classList.remove('hidden');
+      } else {
+        analysisEl.classList.add('hidden');
+      }
+    }
+    
+    workspace.innerHTML = tokens.map(token => {
+      const entry = dictionaryEngine.getEntry(token).entry;
+      const pinyin = entry?.pinyin || '';
+      const meaning = entry?.meaning ? entry.meaning.split(';')[0].trim() : '';
+      const hsk = entry?.hsk ? `HSK ${entry.hsk}` : '';
+      const isPhrase = token.length > 1;
+      const structureLabel = showSentenceStructure ? structureMap.get(token) : null;
+      
+      const tooltip = [pinyin, meaning, hsk].filter(Boolean).join('\n');
+      const phraseClass = isPhrase ? 'is-phrase' : '';
+
+      return `
+        <div class="lab-token ${phraseClass}" data-token="${token}" title="${tooltip}">
+          <span class="lab-pinyin">${pinyin}</span>
+          <span class="lab-text">${token}</span>
+          ${structureLabel ? `<span class="lab-structure-label">${structureLabel}</span>` : ''}
+        </div>
+      `;
+    }).join('');
+    
+    if (tokens.some(t => t.length > 1)) {
+      console.log('[SentenceLab] phrase highlight applied');
+    }
+    console.log(`[SentenceLab] tokens injected: ${tokens.length}`);
+  }
+
+  initSentenceLab();
+
+  function logLayoutDiagnostics(mode: string) {
+    if (!isDevMode) return;
+    const videoSurface = document.getElementById('video-surface');
+    const transcriptPanel = document.getElementById('transcript-panel');
+    const focusPanel = document.getElementById('focus-panel');
+    const sentenceLab = document.getElementById('sentence-lab');
+    
+    console.log(`[Layout] Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
+    if (videoSurface) console.log(`[Layout] Video height: ${videoSurface.offsetHeight}px`);
+    if (transcriptPanel) console.log(`[Layout] Transcript height: ${transcriptPanel.offsetHeight}px`);
+    if (focusPanel) console.log(`[Layout] Study panel height: ${focusPanel.offsetHeight}px`);
+    if (sentenceLab) console.log(`[Layout] SentenceLab height: ${sentenceLab.offsetHeight}px`);
+  }
 
   // Initialize view mode
   if (viewModeSelect) {
@@ -58,8 +422,16 @@ export function initUI() {
       
       // Force re-render of focus panel to respect new mode
       stateManager.setState({ selectedToken: stateManager.getState().selectedToken });
+      
+      setTimeout(() => logLayoutDiagnostics(mode), 50);
     });
   }
+
+  window.addEventListener('resize', () => {
+    if (isDevMode && viewModeSelect) {
+      logLayoutDiagnostics(viewModeSelect.value.toLowerCase());
+    }
+  });
 
   if (toggleDevMode) {
     toggleDevMode.addEventListener('change', (e) => {
@@ -87,20 +459,26 @@ export function initUI() {
   let myAudioUrl: string | null = null;
   let isRecording = false;
 
+  function playInterval(start: number, end: number) {
+    if (!video) return;
+    video.currentTime = start;
+    video.play();
+    const checkEnd = () => {
+      if (video.currentTime >= end) {
+        video.pause();
+        video.removeEventListener('timeupdate', checkEnd);
+      }
+    };
+    video.addEventListener('timeupdate', checkEnd);
+  }
+  (window as any).playInterval = playInterval;
+
   (window as any).playSourceAudio = () => {
     const state = stateManager.getState();
     if (state.activeSubtitleId !== null) {
       const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
       if (sub && video) {
-        video.currentTime = sub.start;
-        video.play();
-        const checkEnd = () => {
-          if (video.currentTime >= sub.end) {
-            video.pause();
-            video.removeEventListener('timeupdate', checkEnd);
-          }
-        };
-        video.addEventListener('timeupdate', checkEnd);
+        playInterval(sub.start, sub.end);
       }
     }
   };
@@ -219,6 +597,26 @@ export function initUI() {
     console.log('[Control] Load SRT clicked');
     inputSRT.click();
   };
+
+  if (btnLoadDemoExtended) {
+    btnLoadDemoExtended.onclick = async () => {
+      console.log('[UI] Loading Extended Demo Subtitles...');
+      try {
+        const response = await fetch('/public/data/demo_large.srt');
+        const text = await response.text();
+        const subs = parseSRT(text);
+        
+        // Force re-render of transcript
+        transcriptRendered = false;
+        stateManager.setState({ subtitles: subs });
+        
+        statusLine.textContent = 'extended demo loaded';
+        console.log(`[UI] Extended Demo loaded: ${subs.length} lines`);
+      } catch (err) {
+        console.error('Failed to load extended demo:', err);
+      }
+    };
+  }
 
   inputVideo.addEventListener('change', (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
@@ -455,6 +853,9 @@ export function initUI() {
                     </button>
                   </div>`;
           subDisplay.classList.remove('hidden');
+
+          // Update Sentence Lab
+          updateSentenceLab(currentSub);
         }
 
         // Transcript highlight & scroll
@@ -584,15 +985,30 @@ export function initUI() {
         const examples = state.subtitles.filter(s => s.text.includes(state.selectedToken!)).slice(0, 1);
         const examplesHtml = examples.map(s => renderSubtitleRow(s, state.savedWords, 'example-row')).join('');
 
-        let sentenceTranslation = '';
+        let literalTranslation = '';
+        let naturalTranslation = '';
         if (examples.length > 0) {
-          const rawTokens = tokenTrie.segment(examples[0].text);
+          const text = examples[0].text;
+          const naturalTranslations: Record<string, string> = {
+            "好久不见": "Long time no see.",
+            "好久不见。": "Long time no see.",
+            "我希望那家饭馆不用排队": "I hope that restaurant doesn't have a line.",
+            "我希望那家饭馆不用排队。": "I hope that restaurant doesn't have a line.",
+            "走吧，我已经饿了。": "Let's go, I'm already hungry.",
+            "你不用担心": "You don't need to worry.",
+            "你不用担心。": "You don't need to worry.",
+            "我觉得这个办法可以。": "I think this method works.",
+            "如果人太多，我们也可以先去附近走一走。": "If there are too many people, we can also go for a walk nearby first."
+          };
+          naturalTranslation = naturalTranslations[text] || "Natural translation not available.";
+
+          const rawTokens = tokenTrie.segment(text);
           const phraseTokens = segmentationPostProcessor.process(rawTokens);
-          sentenceTranslation = phraseTokens.map(t => {
+          literalTranslation = phraseTokens.map(t => {
             const res = dictionaryEngine.getEntry(t);
             const meaning = res.entry?.meaning ? res.entry.meaning.split(';')[0].trim() : t;
             return meaning;
-          }).join(' ');
+          }).join(' <span class="opacity-30 mx-1">|</span> ');
         }
 
         focusPanel.innerHTML = `
@@ -628,8 +1044,19 @@ export function initUI() {
               ${examples.length > 0 ? examplesHtml : '<div class="text-sm opacity-40 italic p-2 border border-dashed border-slate-700 rounded text-center">No examples available.</div>'}
             </div>
             ${examples.length > 0 ? `
-            <div class="mt-2 text-sm opacity-70 italic text-slate-300">
-              ${sentenceTranslation}
+            <div class="mt-3 bg-slate-800/50 rounded p-2 border border-slate-700/50">
+              <div id="translation-toggle" class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Translation</span>
+                <button id="btn-toggle-translation" class="text-[10px] px-2 py-0.5 rounded bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">
+                  ${translationMode === 'natural' ? 'Natural' : 'Literal'}
+                </button>
+              </div>
+              <div id="translation-display" 
+                   class="${translationMode === 'literal' ? 'text-xs font-mono opacity-70 leading-relaxed' : 'text-sm opacity-90 text-slate-200'} mt-1 transition-all"
+                   data-natural="${naturalTranslation.replace(/"/g, '&quot;')}"
+                   data-literal="${literalTranslation.replace(/"/g, '&quot;')}">
+                ${translationMode === 'natural' ? naturalTranslation : literalTranslation}
+              </div>
             </div>
             <div class="flex gap-2 mt-3">
               <button class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold transition-colors flex items-center gap-1" onclick="window.speakSentence('${examples[0].text.replace(/'/g, "\\'").replace(/\n/g, ' ')}')">
@@ -883,11 +1310,15 @@ export function initUI() {
     }
   };
 
-  (window as any).replayFrom = (start: number) => {
+  (window as any).replayFrom = (start: number, end?: number) => {
     console.log('[Transcript] Replay line triggered');
     if (video) {
-      video.currentTime = start;
-      video.play();
+      if (end !== undefined) {
+        playInterval(start, end);
+      } else {
+        video.currentTime = start;
+        video.play();
+      }
     }
   };
 
@@ -908,15 +1339,34 @@ export function initUI() {
   document.body.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
     
+    // Translation Toggle
+    if (target.closest('#btn-toggle-translation')) {
+      translationMode = translationMode === 'natural' ? 'literal' : 'natural';
+      const display = document.getElementById('translation-display');
+      const btn = document.getElementById('btn-toggle-translation');
+      if (display && btn) {
+        btn.textContent = translationMode === 'natural' ? 'Natural' : 'Literal';
+        if (translationMode === 'literal') {
+          display.className = 'text-xs font-mono opacity-70 leading-relaxed mt-1 transition-all';
+          display.innerHTML = display.getAttribute('data-literal') || '';
+        } else {
+          display.className = 'text-sm opacity-90 text-slate-200 mt-1 transition-all';
+          display.innerHTML = display.getAttribute('data-natural') || '';
+        }
+      }
+      return;
+    }
+    
     // Token Click
-    if (target.classList.contains('token')) {
-      const token = target.getAttribute('data-token');
+    const tokenEl = target.closest('.token') as HTMLElement;
+    if (tokenEl) {
+      const token = tokenEl.getAttribute('data-token');
       if (token) {
         console.log(`[Token] Token clicked: ${token}`);
         
         // Visual feedback
         document.querySelectorAll('.active-token').forEach(el => el.classList.remove('active-token'));
-        target.classList.add('active-token');
+        tokenEl.classList.add('active-token');
 
         // Audio Interaction Recovery: Play pronunciation
         window.speechSynthesis.cancel();
@@ -926,7 +1376,7 @@ export function initUI() {
         console.log(`[Audio] Word pronunciation triggered\ntoken: ${token}\nvoice: zh-CN`);
 
         // Find the subtitle this token belongs to
-        const row = target.closest('.subtitle-row') as HTMLElement;
+        const row = tokenEl.closest('.subtitle-row') as HTMLElement;
         if (row) {
           const start = parseFloat(row.getAttribute('data-start') || '0');
           video.currentTime = start;
@@ -948,6 +1398,9 @@ export function initUI() {
         });
 
         engineLoop.processEvent({ type: 'TOKEN_CLICK', token });
+        
+        // Phrase Explorer Integration
+        updatePhraseExplorer(token);
         
         // Scroll study panel to top
         if (focusPanel) {
