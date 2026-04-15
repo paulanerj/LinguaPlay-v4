@@ -398,20 +398,6 @@ export function initUI() {
 
   initSentenceLab();
 
-  function logLayoutDiagnostics(mode: string) {
-    if (!isDevMode) return;
-    const videoSurface = document.getElementById('video-surface');
-    const transcriptPanel = document.getElementById('transcript-panel');
-    const focusPanel = document.getElementById('focus-panel');
-    const sentenceLab = document.getElementById('sentence-lab');
-    
-    console.log(`[Layout] Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
-    if (videoSurface) console.log(`[Layout] Video height: ${videoSurface.offsetHeight}px`);
-    if (transcriptPanel) console.log(`[Layout] Transcript height: ${transcriptPanel.offsetHeight}px`);
-    if (focusPanel) console.log(`[Layout] Study panel height: ${focusPanel.offsetHeight}px`);
-    if (sentenceLab) console.log(`[Layout] SentenceLab height: ${sentenceLab.offsetHeight}px`);
-  }
-
   // Initialize view mode
   if (viewModeSelect) {
     document.body.classList.add(`mode-${viewModeSelect.value.toLowerCase()}`);
@@ -422,16 +408,8 @@ export function initUI() {
       
       // Force re-render of focus panel to respect new mode
       stateManager.setState({ selectedToken: stateManager.getState().selectedToken });
-      
-      setTimeout(() => logLayoutDiagnostics(mode), 50);
     });
   }
-
-  window.addEventListener('resize', () => {
-    if (isDevMode && viewModeSelect) {
-      logLayoutDiagnostics(viewModeSelect.value.toLowerCase());
-    }
-  });
 
   if (toggleDevMode) {
     toggleDevMode.addEventListener('change', (e) => {
