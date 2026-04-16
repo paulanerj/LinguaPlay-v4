@@ -8,78 +8,7 @@
   </head>
   <body>
     <div id="app-container">
-      <div id="main-content">
-        <div id="controls-bar" class="h-[48px] flex items-center justify-between px-4 bg-slate-800 border-y border-slate-700 shrink-0 z-20">
-          <div class="flex items-center gap-3">
-            <button id="btn-load-video" class="ui-btn-compact">Load Content</button>
-            <button id="btn-load-srt" class="ui-btn-compact">Load Subtitles</button>
-            <button id="btn-load-demo-extended" class="ui-btn-compact ml-1">Load Demo (Extended)</button>
-            <select id="view-mode-select" class="ui-btn-compact bg-slate-700 border-none outline-none cursor-pointer ml-2">
-              <option value="CINEMA">Cinema</option>
-              <option value="STUDY">Study</option>
-              <option value="INTENSIVE" selected>Intensive</option>
-            </select>
-            <button id="btn-slow-mode" class="ui-btn-compact ml-2">Speed: 1.0x</button>
-          </div>
-
-          <div class="flex items-center gap-4">
-            <div id="status-line" class="hidden md:block text-[10px] uppercase tracking-widest opacity-40 truncate max-w-[200px]">
-              ready
-            </div>
-            <div id="status-lexicon" class="text-[10px] opacity-40 hidden sm:block">Lexicon: Loading...</div>
-            <label class="flex items-center gap-2 text-[10px] uppercase tracking-widest cursor-pointer opacity-70 hover:opacity-100 transition-opacity font-bold">
-              <input type="checkbox" id="toggle-dev-mode" class="rounded border-slate-600 bg-slate-700 text-accent-primary focus:ring-accent-primary">
-              Dev Mode
-            </label>
-          </div>
-        </div>
-
-        <div id="video-surface">
-          <video controls>
-            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-          </video>
-          <div id="subtitle-display" class="hidden"></div>
-        </div>
-
-        <input type="file" id="input-video" accept="video/*" class="hidden">
-        <input type="file" id="input-srt" accept=".srt" class="hidden">
-
-        <div id="workspace">
-          <div id="transcript-panel"></div>
-          <div id="focus-panel">
-            <div class="flex h-full items-center justify-center opacity-30 text-center px-8">
-              Tap a word in the subtitles to analyze vocabulary.
-            </div>
-          </div>
-          <div id="sentence-lab" class="collapsed">
-            <div id="sentence-lab-header" class="flex items-center justify-between px-4 py-2 bg-slate-800 border-t border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors">
-              <span class="text-xs font-bold uppercase tracking-widest opacity-60">Sentence Lab</span>
-              <span class="lab-toggle-icon text-[10px] opacity-40">▼</span>
-            </div>
-            <div id="sentence-lab-content" class="p-4 bg-slate-900/50">
-              <div id="sentence-analysis" class="mb-4 p-3 bg-slate-800/40 rounded border border-slate-700/50 text-[10px] font-mono text-slate-400 hidden"></div>
-              <div id="sentence-lab-workspace" class="flex flex-wrap gap-2 min-h-[60px] p-3 border-2 border-dashed border-slate-700 rounded-lg bg-slate-900/80"></div>
-              <div id="sentence-lab-controls" class="flex flex-wrap gap-2 mt-4">
-                <button id="btn-lab-tts" class="ui-btn-compact bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30">🔊 Sentence TTS</button>
-                <button id="btn-lab-replay" class="ui-btn-compact bg-accent-primary/20 text-accent-primary border border-accent-primary/30 hover:bg-accent-primary/30">▶ Replay Movie Line</button>
-                <div class="h-6 w-[1px] bg-slate-700 mx-1"></div>
-                <button id="btn-lab-structure" class="ui-btn-compact bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700">Structure</button>
-                <button id="btn-lab-shuffle" class="ui-btn-compact bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700">Shuffle</button>
-                <button id="btn-lab-reset" class="ui-btn-compact bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700">Reset</button>
-              </div>
-            </div>
-          </div>
-          <div id="phrase-explorer" class="hidden border-t border-slate-700 bg-slate-900/80">
-            <div id="phrase-explorer-header" class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
-              <span class="text-xs font-bold uppercase tracking-widest opacity-60">Phrase Explorer</span>
-              <button id="btn-close-explorer" class="text-lg opacity-40 hover:opacity-100">×</button>
-            </div>
-            <div id="phrase-explorer-content" class="p-4 overflow-y-auto max-h-[300px]">
-              <!-- Dynamic Content -->
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- UI will be rendered here by uiBindings.ts -->
     </div>
 
     <div id="quick-preview-tooltip" class="hidden"></div>

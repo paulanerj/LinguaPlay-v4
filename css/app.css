@@ -14,11 +14,144 @@ WHY THIS EXISTS: Provides the visual framework for the cognition-driven UI.
   --sub-bg: rgba(15, 23, 42, 0.8);
 }
 
-body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  overflow: hidden;
+/* UI_V2 Specific Styles */
+.ui-v2 #video-surface {
+  flex: 0 0 auto;
+  height: 40vh; /* Default Study Mode */
+  transition: height 0.3s ease;
+}
+
+.ui-v2.mode-cinema #video-surface {
+  height: 55vh;
+}
+
+#subtitle-stack {
+  background: rgba(15, 23, 42, 0.9);
+  border-bottom: 1px solid #334155;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 80px;
+  justify-content: center;
+}
+
+#subtitle-native {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+}
+
+#subtitle-translation {
+  font-size: 1rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
+#quick-word-panel {
+  background: #1e293b;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 50px;
+}
+
+#sentence-panel {
+  background: #0f172a;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #334155;
+  min-height: 40px;
+}
+
+#study-workspace {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+}
+
+#tab-bar {
+  display: flex;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+#tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-btn {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  color: #38bdf8;
+  border-bottom-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.05);
+}
+
+#tab-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+/* Subtitle Token Styling in V2 */
+.sub-token {
+  cursor: pointer;
+  padding: 0 2px;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.sub-token:hover {
+  background: rgba(56, 189, 248, 0.2);
+}
+
+.sub-token.active {
+  background: rgba(56, 189, 248, 0.4);
+  color: #fff;
+}
+
+/* Visibility Toggles */
+.hidden-sub {
+  display: none !important;
+}
+
+/* Version Toggle */
+.ui-version-toggle {
+  display: flex;
+  background: #0f172a;
+  border-radius: 4px;
+  padding: 2px;
+  border: 1px solid #334155;
+}
+
+.ui-version-btn {
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.ui-version-btn.active {
+  background: #38bdf8;
+  color: #0f172a;
 }
 
 #app-container {
@@ -452,7 +585,13 @@ body.mode-intensive #focus-panel {
 .token.heat-common { color: #60a5fa; } /* blue-400 */
 .token.heat-mid { color: #facc15; } /* yellow-400 */
 .token.heat-rare { color: #f97316; } /* orange-500 */
-.token.heat-unknown { color: #ef4444; } /* red-500 */
+.token.heat-unknown { color: #94a3b8; } /* grey-400 */
+
+/* HSK specific mapping */
+.token.heat-hsk1 { color: #7dd3fc; } /* light blue */
+.token.heat-hsk2 { color: #4ade80; } /* green */
+.token.heat-hsk3 { color: #facc15; } /* yellow */
+.token.heat-hsk4 { color: #f97316; } /* orange */
 
 /* Maintain visibility on hover/active */
 .token:hover {
