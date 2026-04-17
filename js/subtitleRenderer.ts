@@ -26,15 +26,9 @@ export function renderSubtitleRow(subtitle: Subtitle, savedWords: Set<string>, e
 
   const tokenHtml = tokens.map(token => {
     const isSaved = savedWords.has(token) ? 'saved' : '';
+    const heatClass = getHeatClass(token, savedWords);
     const result = dictionaryEngine.getEntry(token);
-    let heatClass = getHeatClass(token, savedWords);
     const truthClass = `truth-${result.truthStatus.toLowerCase().replace('_', '-')}`;
-    
-    if (result.entry?.hsk === 1) heatClass = 'heat-hsk1';
-    else if (result.entry?.hsk === 2) heatClass = 'heat-hsk2';
-    else if (result.entry?.hsk === 3) heatClass = 'heat-hsk3';
-    else if (result.entry?.hsk && result.entry.hsk >= 4) heatClass = 'heat-hsk4';
-    else if (!result.entry && result.truthStatus === 'MISSING') heatClass = 'heat-unknown';
     
     if (result.truthStatus !== 'NON_LEXICAL') {
       totalLexical++;

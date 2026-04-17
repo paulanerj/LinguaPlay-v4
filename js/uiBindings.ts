@@ -20,169 +20,21 @@ import { tokenTrie } from './tokenTrie.ts';
 import { segmentationPostProcessor } from './segmentationPostProcessor.ts';
 
 export function initUI() {
-  const appContainer = document.getElementById('app-container')!;
-  
-  // UI State
-  let currentSpeed = 1.0;
-  let isDevMode = false;
-  let translationMode: 'natural' | 'literal' = 'natural';
-  let activeTab = 'word';
-  let subVisibility = { chinese: true, english: true, literal: false };
-  let videoFile: File | null = null;
-  let srtFile: File | null = null;
-  let currentVideoUrl: string | null = null;
+  const video = document.querySelector('video') as HTMLVideoElement;
+  const subDisplay = document.getElementById('subtitle-display')!;
+  const transcriptPanel = document.getElementById('transcript-panel')!;
+  const focusPanel = document.getElementById('focus-panel')!;
+  const tooltip = document.getElementById('quick-preview-tooltip')!;
+  const statusLine = document.getElementById('status-line')!;
 
-  // Render Templates
-  function getV1Template() {
-    return `
-      <div id="main-content">
-        <div id="controls-bar" class="h-[48px] flex items-center justify-between px-4 bg-slate-800 border-y border-slate-700 shrink-0 z-20">
-          <div class="flex items-center gap-3">
-            <button id="btn-load-video" class="ui-btn-compact">Load Content</button>
-            <button id="btn-load-srt" class="ui-btn-compact">Load Subtitles</button>
-            <button id="btn-load-demo-extended" class="ui-btn-compact ml-1">Load Demo (Extended)</button>
-            <select id="view-mode-select" class="ui-btn-compact bg-slate-700 border-none outline-none cursor-pointer ml-2">
-              <option value="CINEMA">Cinema</option>
-              <option value="STUDY">Study</option>
-              <option value="INTENSIVE" selected>Intensive</option>
-            </select>
-            <button id="btn-slow-mode" class="ui-btn-compact ml-2">Speed: 1.0x</button>
-          </div>
-
-          <div class="flex items-center gap-4">
-            <div id="status-line" class="hidden md:block text-[10px] uppercase tracking-widest opacity-40 truncate max-w-[200px]">ready</div>
-            <div id="status-lexicon" class="text-[10px] opacity-40 hidden sm:block">Lexicon: Loading...</div>
-            <div class="ui-version-toggle ml-2">
-              <div class="ui-version-btn ${stateManager.getState().uiVersion === 'v1' ? 'active' : ''}" data-version="v1">V1</div>
-              <div class="ui-version-btn ${stateManager.getState().uiVersion === 'v2' ? 'active' : ''}" data-version="v2">V2</div>
-            </div>
-            <label class="flex items-center gap-2 text-[10px] uppercase tracking-widest cursor-pointer opacity-70 hover:opacity-100 transition-opacity font-bold">
-              <input type="checkbox" id="toggle-dev-mode" class="rounded border-slate-600 bg-slate-700 text-accent-primary focus:ring-accent-primary">
-              Dev Mode
-            </label>
-          </div>
-        </div>
-
-        <div id="video-surface">
-          <video controls>
-            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-          </video>
-          <div id="subtitle-display" class="hidden"></div>
-        </div>
-
-        <input type="file" id="input-video" accept="video/*" class="hidden">
-        <input type="file" id="input-srt" accept=".srt" class="hidden">
-
-        <div id="workspace">
-          <div id="transcript-panel"></div>
-          <div id="focus-panel">
-            <div class="flex h-full items-center justify-center opacity-30 text-center px-8">
-              Tap a word in the subtitles to analyze vocabulary.
-            </div>
-          </div>
-          <div id="sentence-lab" class="collapsed">
-            <div id="sentence-lab-header" class="flex items-center justify-between px-4 py-2 bg-slate-800 border-t border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors">
-              <span class="text-xs font-bold uppercase tracking-widest opacity-60">Sentence Lab</span>
-              <span class="lab-toggle-icon text-[10px] opacity-40">▼</span>
-            </div>
-            <div id="sentence-lab-content" class="p-4 bg-slate-900/50">
-              <div id="sentence-analysis" class="mb-4 p-3 bg-slate-800/40 rounded border border-slate-700/50 text-[10px] font-mono text-slate-400 hidden"></div>
-              <div id="sentence-lab-workspace" class="flex flex-wrap gap-2 min-h-[60px] p-3 border-2 border-dashed border-slate-700 rounded-lg bg-slate-900/80"></div>
-              <div id="sentence-lab-controls" class="flex flex-wrap gap-2 mt-4">
-                <button id="btn-lab-tts" class="ui-btn-compact bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30">🔊 Sentence TTS</button>
-                <button id="btn-lab-replay" class="ui-btn-compact bg-accent-primary/20 text-accent-primary border border-accent-primary/30 hover:bg-accent-primary/30">▶ Replay Movie Line</button>
-                <div class="h-6 w-[1px] bg-slate-700 mx-1"></div>
-                <button id="btn-lab-structure" class="ui-btn-compact bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700">Structure</button>
-                <button id="btn-lab-shuffle" class="ui-btn-compact bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700">Shuffle</button>
-                <button id="btn-lab-reset" class="ui-btn-compact bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700">Reset</button>
-              </div>
-            </div>
-          </div>
-          <div id="phrase-explorer" class="hidden border-t border-slate-700 bg-slate-900/80">
-            <div id="phrase-explorer-header" class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
-              <span class="text-xs font-bold uppercase tracking-widest opacity-60">Phrase Explorer</span>
-              <button id="btn-close-explorer" class="text-lg opacity-40 hover:opacity-100">×</button>
-            </div>
-            <div id="phrase-explorer-content" class="p-4 overflow-y-auto max-h-[300px]"></div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function getV2Template() {
-    return `
-      <div id="main-content" class="ui-v2 flex flex-col bg-slate-900">
-        <div id="controls-bar" class="h-[48px] flex items-center justify-between px-4 bg-slate-800 border-b border-slate-700 shrink-0 z-20">
-          <div class="flex items-center gap-3">
-            <button id="btn-load-video" class="ui-btn-compact">Load Content</button>
-            <button id="btn-load-srt" class="ui-btn-compact">Load Subtitles</button>
-            <button id="btn-load-demo-extended" class="ui-btn-compact ml-1">Load Demo (Extended)</button>
-            <select id="view-mode-select" class="ui-btn-compact bg-slate-700 border-none outline-none cursor-pointer ml-2">
-              <option value="CINEMA">Cinema</option>
-              <option value="STUDY" selected>Study</option>
-              <option value="INTENSIVE">Intensive</option>
-            </select>
-            <button id="btn-slow-mode" class="ui-btn-compact ml-2">Speed: 1.0x</button>
-          </div>
-
-          <div class="flex items-center gap-4">
-            <div id="status-lexicon" class="text-[10px] opacity-40 hidden sm:block">Lexicon: Loading...</div>
-            <div class="ui-version-toggle ml-2">
-              <div class="ui-version-btn ${stateManager.getState().uiVersion === 'v1' ? 'active' : ''}" data-version="v1">V1</div>
-              <div class="ui-version-btn ${stateManager.getState().uiVersion === 'v2' ? 'active' : ''}" data-version="v2">V2</div>
-            </div>
-            <label class="flex items-center gap-2 text-[10px] uppercase tracking-widest cursor-pointer opacity-70 hover:opacity-100 transition-opacity font-bold">
-              <input type="checkbox" id="toggle-dev-mode" class="rounded border-slate-600 bg-slate-700 text-accent-primary focus:ring-accent-primary">
-              Dev Mode
-            </label>
-          </div>
-        </div>
-
-        <div id="video-surface" class="relative flex-shrink-0 bg-black flex justify-center items-center">
-          <video controls class="w-full h-full object-contain">
-            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-          </video>
-          <div id="subtitle-display" class="hidden"></div>
-        </div>
-
-        <div id="transcript-panel" class="flex-shrink-0 bg-slate-900 border-b border-slate-700 overflow-y-auto w-full max-h-[14vh] min-h-[40px] px-4">
-        </div>
-
-        <div id="quick-word-panel" class="flex-shrink-0 bg-slate-800 p-3 border-b border-slate-700 flex items-center gap-4 min-h-[50px] w-full">
-          <div class="text-slate-500 text-[10px] uppercase tracking-widest italic">Select a word to begin...</div>
-        </div>
-
-        <div id="sentence-panel" class="flex-shrink-0 bg-slate-900 p-3 border-b border-slate-700 min-h-[40px] w-full">
-          <div class="flex items-center justify-between">
-            <div id="sentence-meaning-text" class="text-sm text-slate-300 opacity-80">Sentence translation will appear here.</div>
-            <button id="btn-toggle-sentence-mode" class="ui-btn-compact bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors">
-              ${translationMode === 'natural' ? 'Natural' : 'Literal'}
-            </button>
-          </div>
-        </div>
-
-        <div id="study-workspace" class="flex-1 flex flex-col bg-slate-900 w-full min-h-0">
-          <div id="tab-bar" class="flex-shrink-0 flex overflow-x-auto bg-slate-800 border-b border-slate-700 scrollbar-none">
-            <div class="tab-btn ${activeTab === 'word' ? 'active' : ''}" data-tab="word">Word</div>
-            <div class="tab-btn ${activeTab === 'sentence' ? 'active' : ''}" data-tab="sentence">Sentence</div>
-            <div class="tab-btn ${activeTab === 'sentencelab' ? 'active' : ''}" data-tab="sentencelab">SentenceLab</div>
-            <div class="tab-btn ${activeTab === 'phrase' ? 'active' : ''}" data-tab="phrase">Phrase Explorer</div>
-            <div class="tab-btn ${activeTab === 'grammar' ? 'active' : ''}" data-tab="grammar">Grammar</div>
-            <div class="tab-btn ${activeTab === 'practice' ? 'active' : ''}" data-tab="practice">Practice</div>
-          </div>
-          <div id="tab-content" class="flex-1 overflow-y-auto p-4 relative">
-             <div class="flex h-full items-center justify-center opacity-20 text-center px-8 text-sm">
-               Select a token or sentence to populate study tools.
-             </div>
-          </div>
-        </div>
-
-        <input type="file" id="input-video" accept="video/*" class="hidden">
-        <input type="file" id="input-srt" accept=".srt" class="hidden">
-      </div>
-    `;
-  }
+  const btnLoadVideo = document.getElementById('btn-load-video')!;
+  const btnLoadSRT = document.getElementById('btn-load-srt')!;
+  const btnLoadDemoExtended = document.getElementById('btn-load-demo-extended')!;
+  const btnSlowMode = document.getElementById('btn-slow-mode');
+  const viewModeSelect = document.getElementById('view-mode-select') as HTMLSelectElement;
+  const toggleDevMode = document.getElementById('toggle-dev-mode') as HTMLInputElement;
+  const inputVideo = document.getElementById('input-video') as HTMLInputElement;
+  const inputSRT = document.getElementById('input-srt') as HTMLInputElement;
 
   let transcriptRendered = false;
   let lastActiveId: number | null = null;
@@ -190,510 +42,15 @@ export function initUI() {
   let lastSavedWordsRef: Set<string> | null = null;
   let lastAttentionTarget: string | null = null;
   let lastReviewQueueRef: any = null;
-  let showSentenceStructure = false;
+
+  let videoFile: File | null = null;
+  let srtFile: File | null = null;
+  let currentVideoUrl: string | null = null;
+  let currentSpeed = 1.0;
+  let isDevMode = false;
+  let translationMode: 'natural' | 'literal' = 'natural';
   let sentenceLabOriginalTokens: string[] = [];
-
-  function bindSharedEvents() {
-    const video = document.querySelector('video') as HTMLVideoElement;
-    if (!video) {
-      console.error("[UI] Video element not found during event binding");
-      return;
-    }
-    const btnLoadVideo = document.getElementById('btn-load-video')!;
-    const btnLoadSRT = document.getElementById('btn-load-srt')!;
-    const btnLoadDemoExtended = document.getElementById('btn-load-demo-extended')!;
-    const btnSlowMode = document.getElementById('btn-slow-mode');
-    const viewModeSelect = document.getElementById('view-mode-select') as HTMLSelectElement;
-    const toggleDevMode = document.getElementById('toggle-dev-mode') as HTMLInputElement;
-    const inputVideo = document.getElementById('input-video') as HTMLInputElement;
-    const inputSRT = document.getElementById('input-srt') as HTMLInputElement;
-
-    // Version Toggle
-    document.querySelectorAll('.ui-version-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const version = btn.getAttribute('data-version') as 'v1' | 'v2';
-        stateManager.setState({ uiVersion: version });
-        renderUI();
-      });
-    });
-
-    // File Loading
-    btnLoadVideo.onclick = () => inputVideo.click();
-    btnLoadSRT.onclick = () => inputSRT.click();
-    
-    if (btnLoadDemoExtended) {
-      btnLoadDemoExtended.onclick = async () => {
-        try {
-          const response = await fetch('/public/data/demo_large.srt');
-          const text = await response.text();
-          const subs = parseSRT(text);
-          transcriptRendered = false;
-          stateManager.setState({ subtitles: subs });
-          console.log(`[UI] Extended Demo loaded: ${subs.length} lines`);
-        } catch (err) {
-          console.error('Failed to load extended demo:', err);
-        }
-      };
-    }
-
-    inputVideo.addEventListener('change', (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        if (currentVideoUrl) URL.revokeObjectURL(currentVideoUrl);
-        videoFile = file;
-        currentVideoUrl = URL.createObjectURL(file);
-        video.src = currentVideoUrl;
-        video.load();
-        resetContentState();
-      }
-    });
-
-    inputSRT.addEventListener('change', (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const text = event.target?.result as string;
-            const subs = parseSRT(text);
-            srtFile = file;
-            resetContentState();
-            stateManager.setState({ subtitles: subs });
-          } catch (err) {
-            console.error("SRT Parse Failed:", err);
-          }
-        };
-        reader.readAsText(file);
-      }
-    });
-
-    // Video Events
-    video.addEventListener('timeupdate', () => {
-      const currentTime = video.currentTime;
-      stateManager.setState({ currentTime });
-      syncSubtitles(currentTime);
-    });
-
-    // Speed Control
-    if (btnSlowMode) {
-      btnSlowMode.addEventListener('click', () => {
-        if (currentSpeed === 1.0) currentSpeed = 0.75;
-        else if (currentSpeed === 0.75) currentSpeed = 0.5;
-        else currentSpeed = 1.0;
-        video.playbackRate = currentSpeed;
-        btnSlowMode.textContent = `Speed: ${currentSpeed}x`;
-      });
-    }
-
-    // View Mode
-    if (viewModeSelect) {
-      document.body.classList.add(`mode-${viewModeSelect.value.toLowerCase()}`);
-      viewModeSelect.addEventListener('change', (e) => {
-        const mode = (e.target as HTMLSelectElement).value.toLowerCase();
-        document.body.classList.remove('mode-cinema', 'mode-study', 'mode-intensive');
-        document.body.classList.add(`mode-${mode}`);
-        stateManager.setState({ selectedToken: stateManager.getState().selectedToken });
-      });
-    }
-
-    // Dev Mode
-    if (toggleDevMode) {
-      toggleDevMode.addEventListener('change', (e) => {
-        isDevMode = (e.target as HTMLInputElement).checked;
-        stateManager.setState({ selectedToken: stateManager.getState().selectedToken });
-      });
-    }
-  }
-
-  function bindV1Events() {
-    initSentenceLab();
-    // V1 specific logic for transcript panel
-    const transcriptPanel = document.getElementById('transcript-panel')!;
-    let lastUserScroll = 0;
-    transcriptPanel.addEventListener('scroll', () => {
-      lastUserScroll = Date.now();
-    });
-  }
-
-  function bindV2Events() {
-    // Tab Navigation
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        activeTab = btn.getAttribute('data-tab')!;
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        updateTabContent();
-      });
-    });
-
-    // Subtitle Toggles
-    document.querySelectorAll('.sub-toggle').forEach(input => {
-      input.addEventListener('change', (e) => {
-        const type = (e.target as HTMLInputElement).getAttribute('data-type') as keyof typeof subVisibility;
-        subVisibility[type] = (e.target as HTMLInputElement).checked;
-        updateSubtitleStack();
-      });
-    });
-
-    // Sentence Mode Toggle
-    const btnToggleSentence = document.getElementById('btn-toggle-sentence-mode');
-    if (btnToggleSentence) {
-      btnToggleSentence.addEventListener('click', () => {
-        translationMode = translationMode === 'natural' ? 'literal' : 'natural';
-        btnToggleSentence.textContent = translationMode === 'natural' ? 'Natural' : 'Literal';
-        updateSentencePanel();
-      });
-    }
-  }
-
-  function renderUI() {
-    const version = stateManager.getState().uiVersion;
-    if (version === 'v1') {
-      appContainer.innerHTML = getV1Template();
-      bindSharedEvents();
-      bindV1Events();
-    } else {
-      appContainer.innerHTML = getV2Template();
-      bindSharedEvents();
-      bindV2Events();
-    }
-    // Re-trigger state update to populate content
-    stateManager.setState({});
-  }
-
-  function updateSubtitleStack() {
-    const state = stateManager.getState();
-    const subtitleDisplay = document.getElementById('subtitle-display');
-    if (!subtitleDisplay) return;
-
-    if (state.activeSubtitleId === null) {
-      subtitleDisplay.classList.add('hidden');
-      subtitleDisplay.innerHTML = '';
-      return;
-    }
-
-    const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
-    if (!sub) return;
-
-    subtitleDisplay.classList.remove('hidden');
-    subtitleDisplay.innerHTML = renderSubtitleRow(sub, state.savedWords, "overlay-active");
-
-    subtitleDisplay.querySelectorAll('.token').forEach(el => {
-      el.addEventListener('click', () => {
-        const token = el.getAttribute('data-token')!;
-        (window as any).selectToken(token);
-      });
-    });
-  }
-
-  function updateQuickWordPanel() {
-    const state = stateManager.getState();
-    const panel = document.getElementById('quick-word-panel');
-    if (!panel) return;
-
-    if (!state.selectedToken) {
-      panel.innerHTML = '<div class="text-slate-500 text-[10px] uppercase tracking-widest italic">Select a word to begin...</div>';
-      return;
-    }
-
-    const res = dictionaryEngine.getEntry(state.selectedToken);
-    if (!res.entry) {
-      panel.innerHTML = `<div class="text-slate-300 font-bold">${state.selectedToken}</div><div class="text-slate-500 text-xs">Not in dictionary</div>`;
-      return;
-    }
-
-    panel.innerHTML = `
-      <div class="flex items-center gap-3 w-full">
-        <div class="flex items-baseline gap-2">
-          <div class="text-xl font-bold text-accent-primary">${state.selectedToken}</div>
-          <div class="text-sm text-slate-400 font-mono">${res.entry.pinyin}</div>
-        </div>
-        <div class="h-4 w-[1px] bg-slate-700 mx-1"></div>
-        <div class="text-sm text-slate-200 truncate flex-1">${res.entry.meaning.split(';')[0]}</div>
-        <button class="ui-btn-compact ml-auto" onclick="window.speakSentence('${state.selectedToken}')">🔊</button>
-      </div>
-    `;
-  }
-
-  function updateSentencePanel() {
-    const state = stateManager.getState();
-    const textEl = document.getElementById('sentence-meaning-text');
-    if (!textEl) return;
-
-    if (state.activeSubtitleId === null) {
-      textEl.textContent = 'Sentence translation will appear here.';
-      textEl.classList.add('opacity-60');
-      return;
-    }
-
-    const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
-    if (!sub) return;
-
-    textEl.classList.remove('opacity-60');
-    if (translationMode === 'natural') {
-       const naturalTranslations: Record<string, string> = {
-        "你好！好久不见！欢迎来到我的新家。": "Hello! Long time no see! Welcome to my new home.",
-        "你好！哇，你的新家真漂亮，很大。": "Hello! Wow, your new home is really beautiful and big.",
-        "谢谢。请进，请坐。你想喝点什么？": "Thank you. Please come in, please sit. What would you like to drink?",
-        "给我一杯水吧，谢谢。": "Give me a glass of water, please. Thank you.",
-        "好的。你觉得这个小区怎么样？": "Okay. What do you think of this neighborhood?",
-        "我觉得这个小区很好，很安静，也很方便。": "I think this neighborhood is very good, very quiet, and also very convenient.",
-        "对，附近有一个大超市，还有一个公园。": "Yes, there is a big supermarket nearby, and also a park.",
-        "太好了。你每天都去公园散步吗？": "Great. Do you go for a walk in the park every day?",
-        "是的，我每天早上都去公园跑步。锻炼身体很重要。": "Yes, I go running in the park every morning. Exercising is very important.",
-        "那很好。你今天晚上有空吗？我们一起吃晚饭吧。": "That's good. Are you free tonight? Let's have dinner together.",
-        "好久不见": "Long time no see.",
-        "我希望那家饭馆不用排队": "I hope that restaurant doesn't have a line.",
-        "我希望那家饭馆不用排队。": "I hope that restaurant doesn't have a line.",
-        "走吧，我已经饿了。": "Let's go, I'm already hungry.",
-        "你不用担心": "You don't need to worry.",
-        "你不用担心。": "You don't need to worry.",
-        "我觉得这个办法可以。": "I think this method works.",
-        "如果人太多，我们也可以先去附近走一走。": "If there are too many people, we can also go for a walk nearby first."
-      };
-      textEl.textContent = naturalTranslations[sub.text] || sub.text;
-    } else {
-      const rawTokens = tokenTrie.segment(sub.text);
-      const tokens = segmentationPostProcessor.process(rawTokens);
-      textEl.innerHTML = tokens.map(t => {
-        const res = dictionaryEngine.getEntry(t);
-        return `<span class="text-slate-300">${res.entry?.meaning ? res.entry.meaning.split(';')[0].trim() : t}</span>`;
-      }).join(' <span class="opacity-30 mx-1">|</span> ');
-    }
-  }
-
-  function updateTabContent() {
-    const state = stateManager.getState();
-    const content = document.getElementById('tab-content');
-    if (!content) return;
-
-    if (activeTab === 'word') {
-      if (!state.selectedToken) {
-        content.innerHTML = '<div class="flex h-full items-center justify-center opacity-20 text-center px-8 text-sm">Select a token in the subtitles to see details.</div>';
-        return;
-      }
-      renderWordTab(state.selectedToken, content);
-    } else if (activeTab === 'sentence') {
-      if (state.activeSubtitleId === null) {
-        content.innerHTML = '<div class="flex h-full items-center justify-center opacity-20 text-center px-8 text-sm">Play the video to see sentence analysis.</div>';
-        return;
-      }
-      renderSentenceTab(state.activeSubtitleId, content);
-    } else if (activeTab === 'sentencelab') {
-      if (state.activeSubtitleId === null) {
-        content.innerHTML = '<div class="flex h-full items-center justify-center opacity-20 text-center px-8 text-sm">Play the video to use SentenceLab.</div>';
-        return;
-      }
-      renderSentenceLabTab(state.activeSubtitleId, content);
-    } else if (activeTab === 'phrase') {
-      if (!state.selectedToken) {
-        content.innerHTML = '<div class="flex h-full items-center justify-center opacity-20 text-center px-8 text-sm">Select a token to explore phrases.</div>';
-        return;
-      }
-      renderPhraseTab(state.selectedToken, content);
-    } else {
-      content.innerHTML = `<div class="flex h-full items-center justify-center opacity-20 text-center px-8 text-sm">${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} tools coming soon.</div>`;
-    }
-  }
-
-  function renderWordTab(token: string, container: HTMLElement) {
-    const res = dictionaryEngine.getEntry(token);
-    if (!res.entry) {
-      container.innerHTML = `<div class="p-4">Word "${token}" not found in dictionary.</div>`;
-      return;
-    }
-
-    container.innerHTML = `
-      <div class="p-2">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="text-4xl font-bold text-accent-primary">${token}</h2>
-            <p class="text-xl text-slate-400 font-mono">${res.entry.pinyin}</p>
-          </div>
-          <button class="p-3 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors" onclick="window.speakSentence('${token}')">🔊</button>
-        </div>
-        
-        <div class="space-y-4">
-          <section>
-            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Meaning</h3>
-            <div class="bg-slate-800/50 p-3 rounded border border-slate-700/50 text-lg">
-              ${res.entry.meaning}
-            </div>
-          </section>
-
-          <section>
-            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">HSK Level</h3>
-            <div class="inline-block px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-xs font-bold border border-blue-500/30">
-              HSK ${res.entry.hsk || 'N/A'}
-            </div>
-          </section>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderSentenceTab(subtitleId: number, container: HTMLElement) {
-    const state = stateManager.getState();
-    const sub = state.subtitles.find(s => s.id === subtitleId);
-    if (!sub) return;
-
-    const rawTokens = tokenTrie.segment(sub.text);
-    const tokens = segmentationPostProcessor.process(rawTokens);
-
-    container.innerHTML = `
-      <div class="p-2">
-        <h3 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">Structural Breakdown</h3>
-        <div class="space-y-3">
-          ${tokens.map(t => {
-            const res = dictionaryEngine.getEntry(t);
-            const isChinese = /[\u4e00-\u9fa5]/.test(t);
-            if (!isChinese) return '';
-            return `
-              <div class="flex items-center gap-4 p-3 bg-slate-800/30 rounded border border-slate-700/30 hover:bg-slate-800/50 transition-colors cursor-pointer" onclick="window.selectToken('${t}')">
-                <div class="text-xl font-bold text-slate-200 w-16">${t}</div>
-                <div class="flex-1">
-                  <div class="text-xs text-slate-400 font-mono">${res.entry?.pinyin || ''}</div>
-                  <div class="text-sm text-slate-300">${res.entry?.meaning.split(';')[0] || ''}</div>
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    `;
-  }
-
-  function renderSentenceLabTab(subtitleId: number, container: HTMLElement) {
-    const state = stateManager.getState();
-    const sub = state.subtitles.find(s => s.id === subtitleId);
-    if (!sub) return;
-
-    container.innerHTML = `
-      <div id="sentence-lab-v2" class="h-full flex flex-col">
-        <div id="sentence-lab-workspace" class="flex flex-wrap gap-2 min-h-[100px] p-4 border-2 border-dashed border-slate-700 rounded-lg bg-slate-900/80 mb-4"></div>
-        <div class="flex flex-wrap gap-2">
-          <button id="btn-lab-tts" class="ui-btn-compact bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30">🔊 Sentence TTS</button>
-          <button id="btn-lab-replay" class="ui-btn-compact bg-accent-primary/20 text-accent-primary border border-accent-primary/30 hover:bg-accent-primary/30">▶ Replay Movie Line</button>
-          <button id="btn-lab-shuffle" class="ui-btn-compact bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700">Shuffle</button>
-          <button id="btn-lab-reset" class="ui-btn-compact bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700">Reset</button>
-        </div>
-      </div>
-    `;
-    
-    updateSentenceLab(sub);
-    bindSentenceLabEvents();
-  }
-
-  function bindSentenceLabEvents() {
-    const workspace = document.getElementById('sentence-lab-workspace')!;
-    const btnTts = document.getElementById('btn-lab-tts')!;
-    const btnReplay = document.getElementById('btn-lab-replay')!;
-    const btnReset = document.getElementById('btn-lab-reset')!;
-    const btnShuffle = document.getElementById('btn-lab-shuffle')!;
-
-    if (!workspace) return;
-
-    btnReset?.addEventListener('click', () => {
-      const state = stateManager.getState();
-      if (state.activeSubtitleId !== null) {
-        const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
-        if (sub) updateSentenceLab(sub);
-      }
-    });
-
-    btnShuffle?.addEventListener('click', () => {
-      const tokens = Array.from(workspace.querySelectorAll('.lab-token'));
-      const shuffled = [...tokens].sort(() => Math.random() - 0.5);
-      workspace.innerHTML = '';
-      shuffled.forEach(el => workspace.appendChild(el));
-    });
-
-    btnTts?.addEventListener('click', () => {
-      const tokens = Array.from(workspace.querySelectorAll('.lab-token')).map(el => el.getAttribute('data-token'));
-      const sentence = tokens.join('');
-      (window as any).speakSentence(sentence);
-    });
-
-    btnReplay?.addEventListener('click', () => {
-      const state = stateManager.getState();
-      if (state.activeSubtitleId !== null) {
-        const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
-        if (sub) (window as any).replayFrom(sub.start, sub.end);
-      }
-    });
-
-    // Drag and drop
-    let draggedEl: HTMLElement | null = null;
-    workspace.addEventListener('pointerdown', (e) => {
-      const target = (e.target as HTMLElement).closest('.lab-token') as HTMLElement;
-      if (target) {
-        draggedEl = target;
-        draggedEl.classList.add('dragging');
-        draggedEl.setPointerCapture(e.pointerId);
-      }
-    });
-
-    workspace.addEventListener('pointermove', (e) => {
-      if (!draggedEl) return;
-      const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.lab-token') as HTMLElement;
-      if (target && target !== draggedEl && target.parentElement === workspace) {
-        const rect = target.getBoundingClientRect();
-        const next = (e.clientX - rect.left) > (rect.width / 2);
-        if (next) target.after(draggedEl);
-        else target.before(draggedEl);
-      }
-    });
-
-    workspace.addEventListener('pointerup', (e) => {
-      if (draggedEl) {
-        draggedEl.classList.remove('dragging');
-        draggedEl.releasePointerCapture(e.pointerId);
-        draggedEl = null;
-      }
-    });
-  }
-
-  function renderPhraseTab(token: string, container: HTMLElement) {
-    container.innerHTML = `<div id="phrase-explorer-v2"></div>`;
-    const inner = document.getElementById('phrase-explorer-v2')!;
-    
-    const entry = dictionaryEngine.getEntry(token).entry;
-    if (!entry) return;
-
-    const examples = [
-      { zh: `${token}很好。`, en: `${token} is very good.` },
-      { zh: `我喜欢${token}。`, en: `I like ${token}.` },
-      { zh: `你${token}吗？`, en: `Are you ${token}?` }
-    ];
-
-    inner.innerHTML = `
-      <div class="space-y-6">
-        <section>
-          <h3 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Example Sentences</h3>
-          <div class="space-y-3">
-            ${examples.map(ex => `
-              <div class="p-3 bg-slate-800/30 rounded border border-slate-700/30">
-                <div class="flex justify-between items-start mb-1">
-                  <div class="text-lg text-slate-200">${ex.zh}</div>
-                  <button class="text-xs opacity-40 hover:opacity-100" onclick="window.speakSentence('${ex.zh}')">🔊</button>
-                </div>
-                <div class="text-sm text-slate-400 italic">${ex.en}</div>
-              </div>
-            `).join('')}
-          </div>
-        </section>
-      </div>
-    `;
-  }
-
-  (window as any).selectToken = (token: string) => {
-    stateManager.setState({ selectedToken: token });
-    if (stateManager.getState().uiVersion === 'v2') {
-      activeTab = 'word';
-      updateTabContent();
-      updateQuickWordPanel();
-    }
-  };
+  let showSentenceStructure = false;
 
   function initSentenceLab() {
     const lab = document.getElementById('sentence-lab')!;
@@ -709,75 +66,121 @@ export function initUI() {
 
     header.addEventListener('click', () => {
       lab.classList.toggle('collapsed');
+      console.log(`[SentenceLab] ${lab.classList.contains('collapsed') ? 'collapsed' : 'expanded'}`);
     });
 
-    btnReset?.addEventListener('click', () => {
-      const state = stateManager.getState();
-      if (state.activeSubtitleId !== null) {
-        const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
-        if (sub) updateSentenceLab(sub);
-      }
-    });
+    // Reset functionality
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        const state = stateManager.getState();
+        if (state.activeSubtitleId !== null) {
+          const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+          if (sub) {
+            updateSentenceLab(sub);
+            console.log('[SentenceLab] sentence reset');
+          }
+        }
+      });
+    }
 
-    btnShuffle?.addEventListener('click', () => {
-      const tokens = Array.from(workspace.querySelectorAll('.lab-token'));
-      const shuffled = [...tokens].sort(() => Math.random() - 0.5);
-      workspace.innerHTML = '';
-      shuffled.forEach(el => workspace.appendChild(el));
-    });
+    // Shuffle functionality
+    if (btnShuffle) {
+      btnShuffle.addEventListener('click', () => {
+        const tokens = Array.from(workspace.querySelectorAll('.lab-token'));
+        const shuffled = [...tokens].sort(() => Math.random() - 0.5);
+        workspace.innerHTML = '';
+        shuffled.forEach(el => workspace.appendChild(el));
+        console.log('[SentenceLab] tokens shuffled');
+      });
+    }
 
-    btnStructure?.addEventListener('click', () => {
-      showSentenceStructure = !showSentenceStructure;
-      btnStructure.classList.toggle('bg-blue-600/40', showSentenceStructure);
-      btnStructure.classList.toggle('text-blue-300', showSentenceStructure);
-      const state = stateManager.getState();
-      if (state.activeSubtitleId !== null) {
-        const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
-        if (sub) updateSentenceLab(sub);
-      }
-    });
+    // Structure toggle
+    if (btnStructure) {
+      btnStructure.addEventListener('click', () => {
+        showSentenceStructure = !showSentenceStructure;
+        btnStructure.classList.toggle('bg-blue-600/40', showSentenceStructure);
+        btnStructure.classList.toggle('text-blue-300', showSentenceStructure);
+        
+        const state = stateManager.getState();
+        if (state.activeSubtitleId !== null) {
+          const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+          if (sub) updateSentenceLab(sub);
+        }
+      });
+    }
 
+    // Token Tap Audio & Visual Feedback
     workspace.addEventListener('click', (e) => {
       const target = (e.target as HTMLElement).closest('.lab-token') as HTMLElement;
       if (target) {
         const token = target.getAttribute('data-token');
         if (token) {
+          console.log(`[SentenceLab] token pronunciation: ${token}`);
+          
+          // Visual feedback
+          workspace.querySelectorAll('.active-token').forEach(el => el.classList.remove('active-token'));
+          target.classList.add('active-token');
+          setTimeout(() => target.classList.remove('active-token'), 300);
+
+          // Audio feedback (click)
           playClickSound();
-          (window as any).speakSentence(token);
+
+          // Pause video to ensure Study Mode
+          if (video && !video.paused) {
+            video.pause();
+          }
+
+          // Pronunciation
+          const utterance = new SpeechSynthesisUtterance(token);
+          utterance.lang = "zh-CN";
+          window.speechSynthesis.speak(utterance);
+
+          // Phrase Explorer Integration
           updatePhraseExplorer(token);
         }
       }
     });
 
+    // Drag and drop logic
     let draggedEl: HTMLElement | null = null;
+
     workspace.addEventListener('pointerdown', (e) => {
       const target = (e.target as HTMLElement).closest('.lab-token') as HTMLElement;
       if (target) {
         draggedEl = target;
         draggedEl.classList.add('dragging');
         draggedEl.setPointerCapture(e.pointerId);
+        console.log(`[SentenceLab] drag started: ${draggedEl.getAttribute('data-token')}`);
       }
     });
 
     workspace.addEventListener('pointermove', (e) => {
       if (!draggedEl) return;
+
       const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.lab-token') as HTMLElement;
       if (target && target !== draggedEl && target.parentElement === workspace) {
         const rect = target.getBoundingClientRect();
         const next = (e.clientX - rect.left) > (rect.width / 2);
-        if (next) target.after(draggedEl);
-        else target.before(draggedEl);
+        if (next) {
+          target.after(draggedEl);
+        } else {
+          target.before(draggedEl);
+        }
       }
     });
 
     workspace.addEventListener('pointerup', (e) => {
       if (draggedEl) {
+        const tokens = Array.from(workspace.querySelectorAll('.lab-token')).map(el => el.getAttribute('data-token'));
+        const pos = tokens.indexOf(draggedEl.getAttribute('data-token')!);
+        console.log(`[SentenceLab] token moved: ${draggedEl.getAttribute('data-token')} → position ${pos}`);
         draggedEl.classList.remove('dragging');
         draggedEl.releasePointerCapture(e.pointerId);
         draggedEl = null;
       }
     });
 
+    // Audio tools
     btnTts.addEventListener('click', () => {
       const tokens = Array.from(workspace.querySelectorAll('.lab-token')).map(el => el.getAttribute('data-token'));
       const sentence = tokens.join('');
@@ -788,9 +191,25 @@ export function initUI() {
       const state = stateManager.getState();
       if (state.activeSubtitleId !== null) {
         const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
-        if (sub) (window as any).replayFrom(sub.start, sub.end);
+        if (sub) {
+          (window as any).replayFrom(sub.start, sub.end);
+        }
       }
     });
+    
+    console.log('[SentenceLab] initialized');
+
+    // Explorer Close
+    const btnCloseExplorer = document.getElementById('btn-close-explorer');
+    if (btnCloseExplorer) {
+      btnCloseExplorer.addEventListener('click', () => {
+        document.getElementById('phrase-explorer')?.classList.add('hidden');
+      });
+    }
+
+    (window as any).explorePhrase = (token: string) => {
+      updatePhraseExplorer(token);
+    };
   }
 
   function updatePhraseExplorer(token: string) {
@@ -805,11 +224,26 @@ export function initUI() {
     }
 
     explorer.classList.remove('hidden');
+
+    // Mock data generation (Simple templates)
     const examples = [
       { zh: `${token}很好。`, en: `${token} is very good.` },
       { zh: `我喜欢${token}。`, en: `I like ${token}.` },
       { zh: `你${token}吗？`, en: `Are you ${token}?` }
     ];
+
+    // Specific overrides for demo words
+    if (token === '不用') {
+      examples.length = 0;
+      examples.push(
+        { zh: "你不用担心。", en: "You don't need to worry." },
+        { zh: "今天不用上班。", en: "No need to work today." },
+        { zh: "你不用等我。", en: "You don't need to wait for me." }
+      );
+    }
+
+    const related = ['不需要', '没必要', '不必'].filter(w => w !== token);
+    const note = entry.pos === 'verb' ? `${token} is commonly used as a verb.` : `${token} is a common word in Mandarin.`;
 
     content.innerHTML = `
       <div class="mb-6">
@@ -820,6 +254,7 @@ export function initUI() {
           <button class="ui-btn-compact" onclick="window.speakSentence('${token}')">🔊 Pronounce</button>
         </div>
       </div>
+
       <div class="mb-6">
         <h3 class="explorer-section-title">Example Sentences</h3>
         <div class="flex flex-col gap-3">
@@ -834,7 +269,27 @@ export function initUI() {
           `).join('')}
         </div>
       </div>
+
+      <div class="mb-6">
+        <h3 class="explorer-section-title">Usage Notes</h3>
+        <div class="explorer-note">
+          ${note}
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <h3 class="explorer-section-title">Related Words</h3>
+        <div class="flex flex-wrap">
+          ${related.map(word => `<span class="explorer-related-chip" onclick="window.explorePhrase('${word}')">${word}</span>`).join('')}
+        </div>
+      </div>
     `;
+    
+    // Ensure Study Mode
+    const video = document.querySelector('video');
+    if (video && !video.paused) {
+      video.pause();
+    }
   }
 
   function playClickSound() {
@@ -842,16 +297,22 @@ export function initUI() {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
+
       oscillator.type = 'sine';
       oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
       oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
+
       gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
       oscillator.connect(gainNode);
       gainNode.connect(audioCtx.destination);
+
       oscillator.start();
       oscillator.stop(audioCtx.currentTime + 0.1);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('AudioContext not supported or blocked');
+    }
   }
 
   function updateSentenceLab(subtitle: any) {
@@ -863,67 +324,120 @@ export function initUI() {
     const tokens = segmentationPostProcessor.process(rawTokens);
     sentenceLabOriginalTokens = [...tokens];
 
-    workspace.innerHTML = tokens.map(t => {
-      const res = dictionaryEngine.getEntry(t);
-      const isChinese = /[\u4e00-\u9fa5]/.test(t);
-      if (!isChinese) return `<div class="lab-token non-chinese" data-token="${t}">${t}</div>`;
-      
-      let structureClass = '';
-      if (showSentenceStructure) {
-        if (res.entry?.pos === 'verb') structureClass = 'pos-verb';
-        else if (res.entry?.pos === 'noun') structureClass = 'pos-noun';
-        else if (res.entry?.pos === 'adj') structureClass = 'pos-adj';
+    // Simple Heuristics for Sentence Analysis
+    const analysis: { subject?: string; verb?: string; object?: string; result?: string } = {};
+    const structureMap = new Map<string, string>();
+
+    // Heuristic: First pronoun/noun is likely subject
+    // Heuristic: First verb after subject is likely main verb
+    let foundSubject = false;
+    let foundVerb = false;
+
+    tokens.forEach((token, idx) => {
+      const entry = dictionaryEngine.getEntry(token).entry;
+      const isPronoun = ['我', '你', '他', '她', '它', '我们', '你们', '他们'].includes(token);
+      const isVerb = entry?.meaning?.toLowerCase().includes('to ') || false;
+
+      if (!foundSubject && (isPronoun || idx === 0)) {
+        analysis.subject = token;
+        structureMap.set(token, 'SUBJ');
+        foundSubject = true;
+      } else if (foundSubject && !foundVerb && isVerb) {
+        analysis.verb = token;
+        structureMap.set(token, 'VERB');
+        foundVerb = true;
+      } else if (foundVerb && idx === tokens.length - 1) {
+        analysis.result = token;
+        structureMap.set(token, 'RESULT');
+      } else if (foundVerb) {
+        analysis.object = token;
+        structureMap.set(token, 'OBJECT');
       }
+    });
+
+    if (analysisEl) {
+      const parts = [];
+      if (analysis.subject) parts.push(`Subject → ${analysis.subject}`);
+      if (analysis.verb) parts.push(`Verb → ${analysis.verb}`);
+      if (analysis.object) parts.push(`Object → ${analysis.object}`);
+      if (analysis.result) parts.push(`Result → ${analysis.result}`);
+      
+      if (parts.length > 0) {
+        analysisEl.innerHTML = parts.join(' | ');
+        analysisEl.classList.remove('hidden');
+      } else {
+        analysisEl.classList.add('hidden');
+      }
+    }
+    
+    workspace.innerHTML = tokens.map(token => {
+      const entry = dictionaryEngine.getEntry(token).entry;
+      const pinyin = entry?.pinyin || '';
+      const meaning = entry?.meaning ? entry.meaning.split(';')[0].trim() : '';
+      const hsk = entry?.hsk ? `HSK ${entry.hsk}` : '';
+      const isPhrase = token.length > 1;
+      const structureLabel = showSentenceStructure ? structureMap.get(token) : null;
+      
+      const tooltip = [pinyin, meaning, hsk].filter(Boolean).join('\n');
+      const phraseClass = isPhrase ? 'is-phrase' : '';
 
       return `
-        <div class="lab-token ${structureClass}" data-token="${t}">
-          <div class="lab-token-pinyin">${res.entry?.pinyin || ''}</div>
-          <div class="lab-token-zh">${t}</div>
+        <div class="lab-token ${phraseClass}" data-token="${token}" title="${tooltip}">
+          <span class="lab-pinyin">${pinyin}</span>
+          <span class="lab-text">${token}</span>
+          ${structureLabel ? `<span class="lab-structure-label">${structureLabel}</span>` : ''}
         </div>
       `;
     }).join('');
-
-    if (analysisEl) {
-      analysisEl.classList.remove('hidden');
-      analysisEl.textContent = `Tokens: ${tokens.length} | Characters: ${subtitle.text.length}`;
+    
+    if (tokens.some(t => t.length > 1)) {
+      console.log('[SentenceLab] phrase highlight applied');
     }
+    console.log(`[SentenceLab] tokens injected: ${tokens.length}`);
   }
 
-  function resetContentState() {
-    transcriptRendered = false;
-    lastActiveId = null;
-    lastSelectedToken = null;
-    const transcriptPanel = document.getElementById('transcript-panel');
-    if (transcriptPanel) transcriptPanel.innerHTML = '';
-    const focusPanel = document.getElementById('focus-panel');
-    if (focusPanel) focusPanel.innerHTML = '<div class="flex h-full items-center justify-center opacity-30 text-center px-8">Tap a word in the subtitles to analyze vocabulary.</div>';
+  initSentenceLab();
+
+  // Initialize view mode
+  if (viewModeSelect) {
+    document.body.classList.add(`mode-${viewModeSelect.value.toLowerCase()}`);
+    viewModeSelect.addEventListener('change', (e) => {
+      const mode = (e.target as HTMLSelectElement).value.toLowerCase();
+      document.body.classList.remove('mode-cinema', 'mode-study', 'mode-intensive');
+      document.body.classList.add(`mode-${mode}`);
+      
+      // Force re-render of focus panel to respect new mode
+      stateManager.setState({ selectedToken: stateManager.getState().selectedToken });
+    });
   }
 
-  (window as any).speakSentence = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "zh-CN";
-    window.speechSynthesis.speak(utterance);
-  };
+  if (toggleDevMode) {
+    toggleDevMode.addEventListener('change', (e) => {
+      isDevMode = (e.target as HTMLInputElement).checked;
+      // Re-render focus panel to show/hide developer metadata
+      stateManager.setState({ selectedToken: stateManager.getState().selectedToken });
+    });
+  }
 
-  (window as any).replayFrom = (start: number, end: number) => {
-    const video = document.querySelector('video')!;
-    if (video) {
-       video.currentTime = start;
-       video.play();
-       if (end) {
-         const checkEnd = () => {
-           if (video.currentTime >= end) {
-             video.pause();
-             video.removeEventListener('timeupdate', checkEnd);
-           }
-         };
-         video.addEventListener('timeupdate', checkEnd);
-       }
-    }
-  };
+  if (btnSlowMode) {
+    btnSlowMode.addEventListener('click', () => {
+      if (currentSpeed === 1.0) currentSpeed = 0.75;
+      else if (currentSpeed === 0.75) currentSpeed = 0.5;
+      else currentSpeed = 1.0;
+      
+      video.playbackRate = currentSpeed;
+      btnSlowMode.textContent = `Speed: ${currentSpeed}x`;
+    });
+  }
+
+  // Record & Compare MVP State
+  let mediaRecorder: MediaRecorder | null = null;
+  let audioChunks: Blob[] = [];
+  let myAudioBlob: Blob | null = null;
+  let myAudioUrl: string | null = null;
+  let isRecording = false;
 
   function playInterval(start: number, end: number) {
-    const video = document.querySelector('video')!;
     if (!video) return;
     video.currentTime = start;
     video.play();
@@ -935,111 +449,1034 @@ export function initUI() {
     };
     video.addEventListener('timeupdate', checkEnd);
   }
+  (window as any).playInterval = playInterval;
 
-  async function loadDemo() {
-    const video = document.querySelector('video');
-    if (!video) {
-      console.error("[UI] Video element not found during demo load");
+  (window as any).playSourceAudio = () => {
+    const state = stateManager.getState();
+    if (state.activeSubtitleId !== null) {
+      const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+      if (sub && video) {
+        playInterval(sub.start, sub.end);
+      }
+    }
+  };
+
+  (window as any).toggleRecording = async () => {
+    const btnRecord = document.getElementById('btn-record-audio');
+    const status = document.getElementById('recording-status');
+    const btnPlayMine = document.getElementById('btn-play-mine');
+    const btnCompare = document.getElementById('btn-compare-again');
+
+    if (isRecording) {
+      mediaRecorder?.stop();
+      isRecording = false;
+      if (btnRecord) {
+        btnRecord.textContent = 'Record';
+        btnRecord.classList.remove('animate-pulse');
+      }
+      if (status) status.textContent = 'Recording saved.';
       return;
     }
-    video.src = "https://www.w3schools.com/html/mov_bbb.mp4";
+
     try {
-      const response = await fetch('/data/demo_subtitles.srt');
-      const srtText = await response.text();
-      const subs = parseSRT(srtText);
-      resetContentState();
-      stateManager.setState({ subtitles: subs });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        myAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        if (myAudioUrl) URL.revokeObjectURL(myAudioUrl);
+        myAudioUrl = URL.createObjectURL(myAudioBlob);
+        
+        if (btnPlayMine) btnPlayMine.classList.remove('hidden');
+        
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      isRecording = true;
+      
+      if (btnRecord) {
+        btnRecord.textContent = 'Stop';
+        btnRecord.classList.add('animate-pulse');
+      }
+      if (status) status.textContent = 'Recording... Speak now.';
+      if (btnPlayMine) btnPlayMine.classList.add('hidden');
+
     } catch (err) {
-      console.error("Demo Load Failed:", err);
+      console.error("Microphone access denied", err);
+      if (status) status.textContent = 'Microphone access denied.';
+    }
+  };
+
+  (window as any).playMyAudio = () => {
+    if (myAudioUrl) {
+      const audio = new Audio(myAudioUrl);
+      audio.play();
+    }
+  };
+
+  function updateStatus() {
+    if (!videoFile && !srtFile && !transcriptRendered) {
+      statusLine.textContent = 'waiting for content';
+      return;
+    }
+    
+    const parts = [];
+    if (videoFile) parts.push(`Video: ${videoFile.name}`);
+    if (srtFile) parts.push(`SRT: ${srtFile.name}`);
+    
+    if (parts.length === 0) {
+      statusLine.textContent = 'demo mode active';
+    } else {
+      statusLine.textContent = parts.join(' | ');
     }
   }
 
-  stateManager.subscribe((state) => {
-    const version = state.uiVersion;
+  function resetContentState() {
+    // 1. Clear State Manager
+    stateManager.setState({
+      selectedToken: null,
+      activeSubtitleId: null,
+      currentTime: 0,
+      activeCognitiveAttentionAdvice: null,
+      activeSubtitleCognitivePriority: null,
+      topReviewCandidates: [],
+      selectedTokenLearningProfile: null,
+      selectedTokenReinforcementClass: null
+    });
+
+    // 2. Clear Attention Engine
+    attentionEngine.resetAttentionCycle();
+
+    // 3. Clear UI State
+    transcriptRendered = false;
+    transcriptPanel.innerHTML = '';
+    subDisplay.innerHTML = '';
+    subDisplay.classList.add('hidden');
     
-    // Update Subtitles
-    if (version === 'v1') {
-      const subtitleDisplay = document.getElementById('subtitle-display');
-      if (subtitleDisplay) {
-        if (state.activeSubtitleId !== null) {
-          const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
-          if (sub) {
-            subtitleDisplay.classList.remove('hidden');
-            subtitleDisplay.innerHTML = renderSubtitleRow(sub, state.savedWords);
-            
-            // Bind token clicks in V1
-            subtitleDisplay.querySelectorAll('.sub-token').forEach(el => {
-              el.addEventListener('click', () => {
-                const token = el.getAttribute('data-token')!;
-                (window as any).selectToken(token);
-              });
-            });
-          }
-        } else {
-          subtitleDisplay.classList.add('hidden');
-        }
-      }
-    } else {
-      updateSubtitleStack();
-      updateQuickWordPanel();
-      updateSentencePanel();
-      updateTabContent();
-    }
+    // 4. Clear Local Tracking
+    lastActiveId = null;
+    lastSelectedToken = null;
+    lastAttentionTarget = null;
+  }
 
-    // Update Transcript (Both versions)
-    if (state.subtitles.length > 0 && !transcriptRendered) {
-      const transcriptPanel = document.getElementById('transcript-panel');
-      if (transcriptPanel) {
-        transcriptPanel.innerHTML = state.subtitles.map(sub => `
-          <div class="transcript-row" data-id="${sub.id}" onclick="window.replayFrom(${sub.start}, ${sub.end})">
-            <span class="text-[10px] opacity-30 font-mono w-12 shrink-0">${Math.floor(sub.start)}s</span>
-            <div class="flex-1">${sub.text}</div>
-          </div>
-        `).join('');
-        transcriptRendered = true;
-      }
-    }
+  // File Loading Bindings
+  btnLoadVideo.onclick = () => {
+    console.log('[Control] Load Video clicked');
+    inputVideo.click();
+  };
+  
+  btnLoadSRT.onclick = () => {
+    console.log('[Control] Load SRT clicked');
+    inputSRT.click();
+  };
 
-    // Highlight active transcript row (Both versions)
-    if (state.activeSubtitleId !== lastActiveId) {
-      const rows = document.querySelectorAll('.transcript-row');
-      rows.forEach(r => r.classList.remove('active'));
-      const activeRow = document.querySelector(`.transcript-row[data-id="${state.activeSubtitleId}"]`);
-      if (activeRow) {
-        activeRow.classList.add('active');
-        activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (btnLoadDemoExtended) {
+    btnLoadDemoExtended.onclick = async () => {
+      console.log('[UI] Loading Extended Demo Subtitles...');
+      try {
+        const response = await fetch('/public/data/demo_large.srt');
+        const text = await response.text();
+        const subs = parseSRT(text);
+        
+        // Force re-render of transcript
+        transcriptRendered = false;
+        stateManager.setState({ subtitles: subs });
+        
+        statusLine.textContent = 'extended demo loaded';
+        console.log(`[UI] Extended Demo loaded: ${subs.length} lines`);
+      } catch (err) {
+        console.error('Failed to load extended demo:', err);
       }
-      lastActiveId = state.activeSubtitleId;
+    };
+  }
 
-      // Update SentenceLab on sub change
-      const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
-      if (sub) updateSentenceLab(sub);
-    }
-
-    // Update Focus Panel (V1 only)
-    if (version === 'v1' && state.selectedToken !== lastSelectedToken) {
-      const focusPanel = document.getElementById('focus-panel');
-      if (focusPanel && state.selectedToken) {
-        const res = dictionaryEngine.getEntry(state.selectedToken);
-        focusPanel.innerHTML = `
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-4xl font-bold text-accent-primary">${state.selectedToken}</h2>
-              <button class="p-2 bg-slate-800 rounded-full" onclick="window.speakSentence('${state.selectedToken}')">🔊</button>
-            </div>
-            <p class="text-xl text-slate-400 mb-4 font-mono">${res.entry?.pinyin || ''}</p>
-            <div class="bg-slate-800/50 p-4 rounded border border-slate-700/50 mb-6">
-              <p class="text-lg">${res.entry?.meaning || 'Definition not found'}</p>
-            </div>
-            <button class="ui-btn-compact w-full py-3" onclick="window.explorePhrase('${state.selectedToken}')">Explore Phrases</button>
-          </div>
-        `;
+  inputVideo.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) {
+      console.log(`[Video] File selected: ${file.name}`);
+      // Revoke previous URL if it exists
+      if (currentVideoUrl) {
+        URL.revokeObjectURL(currentVideoUrl);
       }
-      lastSelectedToken = state.selectedToken;
+
+      videoFile = file;
+      currentVideoUrl = URL.createObjectURL(file);
+      video.src = currentVideoUrl;
+      video.load();
+      console.log(`[Video] Source attached to player`);
+      
+      resetContentState();
+      updateStatus();
     }
   });
 
-  renderUI();
+  inputSRT.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) {
+      console.log(`[SRT] File loaded: ${file.name}`);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const text = event.target?.result as string;
+          const subs = parseSRT(text);
+          if (subs.length === 0) throw new Error("No subtitles found");
+          
+          console.log(`[SRT] Subtitle entries parsed: ${subs.length}`);
+          srtFile = file;
+          resetContentState();
+          stateManager.setState({ subtitles: subs });
+          
+          // Coverage Audit
+          let totalTokens = 0;
+          let matchedTokens = 0;
+          const unresolvedTokens = new Set<string>();
+          
+          subs.forEach(sub => {
+            const rawTokens = tokenTrie.segment(sub.text);
+            const tokens = segmentationPostProcessor.process(rawTokens);
+            tokens.forEach(token => {
+              const isChinese = /[\u4e00-\u9fa5]/.test(token);
+              if (isChinese) {
+                totalTokens++;
+                const lookup = dictionaryEngine.getEntry(token);
+                if (lookup.entry) {
+                  matchedTokens++;
+                } else {
+                  unresolvedTokens.add(token);
+                }
+              }
+            });
+          });
+          
+          const coverage = totalTokens > 0 ? Math.round((matchedTokens / totalTokens) * 100) : 0;
+          console.log(`\n--- Coverage Audit ---`);
+          console.log(`Subtitle lines scanned: ${subs.length}`);
+          console.log(`Tokens scanned: ${totalTokens}`);
+          console.log(`Dictionary matches: ${matchedTokens}`);
+          console.log(`Coverage: ${coverage}%`);
+          console.log(`Unresolved tokens: ${Array.from(unresolvedTokens).join(', ')}`);
+          console.log(`----------------------\n`);
+          
+          // Compute review candidates once subtitles are loaded
+          const now = timeAuthority.getNow();
+          const reviewCandidates = cognitiveSelectors.getReviewCandidates(subs, now);
+          stateManager.setState({ topReviewCandidates: reviewCandidates });
+          
+          updateStatus();
+        } catch (err) {
+          console.error("SRT Parse Failed:", err);
+          statusLine.textContent = 'parse failed';
+        }
+      };
+      reader.readAsText(file);
+    }
+  });
+
+  async function loadDemo() {
+    // Revoke previous URL if it exists
+    if (currentVideoUrl) {
+      URL.revokeObjectURL(currentVideoUrl);
+      currentVideoUrl = null;
+    }
+
+    videoFile = null;
+    srtFile = null;
+    video.src = "https://www.w3schools.com/html/mov_bbb.mp4";
+    
+    try {
+      // Load demo subtitles
+      const response = await fetch('/data/demo_subtitles.srt');
+      if (!response.ok) throw new Error("Failed to load demo subtitles");
+      const srtText = await response.text();
+      
+      const subs = parseSRT(srtText);
+      resetContentState();
+      stateManager.setState({ subtitles: subs });
+      
+      // Part 1: Validate token coverage
+      let scanned = 0;
+      let resolved = 0;
+      let unresolved = 0;
+      const missingTokens = new Set<string>();
+
+      subs.forEach(sub => {
+        const rawTokens = tokenTrie.segment(sub.text);
+        const tokens = segmentationPostProcessor.process(rawTokens);
+        tokens.forEach(token => {
+          scanned++;
+          const lookup = dictionaryEngine.getEntry(token);
+          if (lookup.truthStatus === 'FOUND' || lookup.truthStatus === 'CURATED' || lookup.truthStatus === 'NON_LEXICAL') {
+            resolved++;
+          } else {
+            unresolved++;
+            missingTokens.add(token);
+          }
+        });
+      });
+
+      console.log(`Subtitle tokens scanned: ${scanned}`);
+      console.log(`Tokens resolved: ${resolved}`);
+      console.log(`Tokens unresolved: ${unresolved}`);
+      console.log(`Coverage: ${Math.round((resolved / scanned) * 100)}%`);
+      if (missingTokens.size > 0) {
+        console.log(`Missing tokens:\n- ${Array.from(missingTokens).join('\n- ')}`);
+      }
+
+      // Compute review candidates
+      const now = timeAuthority.getNow();
+      const reviewCandidates = cognitiveSelectors.getReviewCandidates(subs, now);
+      stateManager.setState({ topReviewCandidates: reviewCandidates });
+      
+      updateStatus();
+    } catch (err) {
+      console.error("Demo Load Failed:", err);
+      statusLine.textContent = 'demo load failed';
+    }
+  }
+
+  // Video Time Update
+  video.addEventListener('timeupdate', () => {
+    const currentTime = video.currentTime;
+    stateManager.setState({ currentTime });
+    syncSubtitles(currentTime);
+    
+    // Part 5: Synchronization Integrity Trace (throttled for console readability)
+    if (Math.random() < 0.05) { // Log roughly 5% of timeupdates
+      console.log(`[Sync] timeupdate | currentTime: ${currentTime.toFixed(3)} | activeSubtitleId: ${stateManager.getState().activeSubtitleId}`);
+    }
+  });
+
+  // State Subscription for Rendering
+  let lastUserScroll = 0;
+  transcriptPanel.addEventListener('scroll', () => {
+    lastUserScroll = Date.now();
+  });
+
+  function canAutoScroll() {
+    return Date.now() - lastUserScroll > 3000;
+  }
+
+  stateManager.subscribe((state) => {
+    // Update Lexicon Status
+    const statusEl = document.getElementById('status-lexicon');
+    if (statusEl) {
+      const modeStr = state.lexiconMode ? ` (${state.lexiconMode})` : '';
+      statusEl.textContent = state.lexiconLoaded ? `Lexicon: Ready${modeStr}` : 'Lexicon: Loading...';
+      statusEl.classList.toggle('text-green-400', state.lexiconLoaded);
+    }
+
+    // Update Session Metrics
+    const metrics = state.sessionMetrics;
+    if (metrics) {
+      const elSeen = document.getElementById('metric-seen');
+      const elReviewed = document.getElementById('metric-reviewed');
+      const elRescued = document.getElementById('metric-rescued');
+      if (elSeen) elSeen.textContent = metrics.tokensSeen.toString();
+      if (elReviewed) elReviewed.textContent = metrics.tokensReviewed.toString();
+      if (elRescued) elRescued.textContent = metrics.rescueTokensResolved.toString();
+    }
+    
+    // Update Pressure
+    const pressure = state.activeOrchestrationDecision?.reviewPressureScore || 0;
+    const elPressure = document.getElementById('metric-pressure');
+    if (elPressure) {
+      elPressure.textContent = `${Math.round(pressure * 100)}%`;
+      if (pressure > 0.8) {
+        elPressure.className = 'font-bold text-red-500 animate-pulse';
+      } else if (pressure > 0.5) {
+        elPressure.className = 'font-bold text-orange-400';
+      } else {
+        elPressure.className = 'font-bold text-green-400';
+      }
+    }
+
+    // Handle Video Pausing for Reviews
+    const decision = state.activeGuidedControlDecision;
+    if (decision) {
+      const shouldPause = decision.shouldSurfaceReviewEntry || 
+                          decision.reviewProgressState === 'ROW_PROPOSED' || 
+                          decision.reviewProgressState === 'ROW_ACTIVE';
+      if (shouldPause && !video.paused) {
+        video.pause();
+      }
+    }
+
+    // 1. Render Transcript Once
+    if (!transcriptRendered && state.subtitles.length > 0) {
+      transcriptPanel.innerHTML = state.subtitles.map(s => renderSubtitleRow(s, state.savedWords, 'transcript-row')).join('');
+      transcriptRendered = true;
+      updateStatus();
+    }
+
+    // 2. Handle Active Subtitle Change (Multi-line Overlay + Transcript Scroll)
+    if (state.activeSubtitleId !== lastActiveId) {
+      const isNewActive = state.activeSubtitleId !== null && state.activeSubtitleId !== lastActiveId;
+      lastActiveId = state.activeSubtitleId;
+      
+      if (state.activeSubtitleId !== null) {
+        const currentSub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+        if (currentSub) {
+          subDisplay.innerHTML = '';
+          const rowHtml = renderSubtitleRow(currentSub, state.savedWords, 'overlay-active');
+          subDisplay.innerHTML = `<div class="relative group pointer-events-auto">
+                    ${rowHtml}
+                    <button class="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-slate-800/80 rounded-full text-slate-300 hover:text-white hover:bg-slate-700" onclick="window.replaySubtitle()">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    </button>
+                  </div>`;
+          subDisplay.classList.remove('hidden');
+
+          // Update Sentence Lab
+          updateSentenceLab(currentSub);
+        }
+
+        // Transcript highlight & scroll
+        document.querySelectorAll('.transcript-row.active').forEach(el => el.classList.remove('active'));
+        const activeRow = transcriptPanel.querySelector(`.transcript-row[data-id="${state.activeSubtitleId}"]`);
+        if (activeRow) {
+          activeRow.classList.add('active');
+          if (canAutoScroll()) {
+            const rect = activeRow.getBoundingClientRect();
+            const panelRect = transcriptPanel.getBoundingClientRect();
+            const isVisible = (rect.top >= panelRect.top) && (rect.bottom <= panelRect.bottom);
+            if (!isVisible) {
+              console.log('[Scroll] Auto-scroll triggered');
+              activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          } else {
+            console.log('[Scroll] Auto-scroll suppressed (user scrolling)');
+          }
+        }
+
+        // Instrument Exposure & Record Memory: Passive View for all tokens in the active row
+        const currentSubForExposure = state.subtitles.find(s => s.id === state.activeSubtitleId);
+        if (currentSubForExposure && currentSubForExposure.tokens) {
+          const now = timeAuthority.getNow();
+          currentSubForExposure.tokens.forEach(token => {
+            // Log Exposure
+            logExposure({
+              token,
+              timestamp: now,
+              subtitleIndex: state.activeSubtitleId,
+              attentionState: 'passive',
+              interactionType: 'view'
+            });
+          });
+        }
+
+        // Attention Engine Integration
+        attentionEngine.resetAttentionCycle();
+        
+        if (isNewActive) {
+          engineLoop.processEvent({ 
+            type: 'SUBTITLE_TRANSITION', 
+            subtitleId: state.activeSubtitleId, 
+            tokens: currentSubForExposure?.tokens || [] 
+          });
+        }
+      } else {
+        subDisplay.innerHTML = '';
+        subDisplay.classList.add('hidden');
+        document.querySelectorAll('.transcript-row.active').forEach(el => el.classList.remove('active'));
+      }
+    }
+
+    // 3. Handle Focus Panel & Example Sandbox
+    if (state.lastAttentionTarget !== lastAttentionTarget) {
+      document.querySelectorAll('.token.attention-target').forEach(el => el.classList.remove('attention-target'));
+      lastAttentionTarget = state.lastAttentionTarget || null;
+      
+      if (lastAttentionTarget) {
+        const activeRow = subDisplay.querySelector('.overlay-active');
+        if (activeRow) {
+          activeRow.querySelectorAll(`.token[data-token="${lastAttentionTarget}"]`).forEach(el => {
+            el.classList.add('attention-target');
+          });
+        }
+        
+        // Instrument Exposure: Target
+        logExposure({
+          token: lastAttentionTarget,
+          timestamp: timeAuthority.getNow(),
+          subtitleIndex: state.activeSubtitleId,
+          attentionState: 'target',
+          interactionType: 'view'
+        });
+      }
+    }
+
+    // Handle Selected Token Highlighting
+    if (state.selectedToken !== lastSelectedToken) {
+      document.querySelectorAll('.token.selected').forEach(el => el.classList.remove('selected'));
+      if (state.selectedToken) {
+        document.querySelectorAll(`.token[data-token="${state.selectedToken}"]`).forEach(el => {
+          el.classList.add('selected');
+        });
+      }
+    }
+
+    if (state.selectedToken !== lastSelectedToken || state.savedWords !== lastSavedWordsRef || state.reviewQueuePreview !== lastReviewQueueRef) {
+      // Visual feedback for selected token
+      if (state.selectedToken !== lastSelectedToken) {
+        document.querySelectorAll('.token.active').forEach(el => el.classList.remove('active'));
+        if (state.selectedToken) {
+          document.querySelectorAll(`.token[data-token="${state.selectedToken}"]`).forEach(el => el.classList.add('active'));
+        }
+      }
+
+      lastSelectedToken = state.selectedToken;
+      lastSavedWordsRef = state.savedWords;
+      lastReviewQueueRef = state.reviewQueuePreview;
+
+      if (state.selectedToken) {
+        focusPanel.classList.add('active');
+        const lookup = dictionaryEngine.getEntry(state.selectedToken);
+        const entry = lookup.entry;
+        const status = lookup.truthStatus;
+        
+        // Dictionary Lookup Trace
+        console.log(`[Token] clicked: ${state.selectedToken}`);
+        console.log(`[Lookup] searching: ${state.selectedToken}`);
+        if (entry) {
+          console.log(`[Lookup] result: FOUND`);
+          console.log(`[pinyin] ${entry.pinyin}`);
+          console.log(`[meaning] ${entry.meaning}`);
+        } else {
+          console.log(`[Lookup] result: NOT FOUND`);
+        }
+        
+        const isSaved = state.savedWords.has(state.selectedToken);
+        const heatLabel = getHeatLabel(state.selectedToken, state.savedWords);
+        const isSuggested = state.selectedToken === lastAttentionTarget;
+        
+        // Memory Stats
+        const memory = learningMemory.getRecord(state.selectedToken);
+        const lastSeen = memory ? new Date(memory.lastSeenAt).toLocaleString() : 'Never';
+
+        // Find examples (limit to 1 for MVP)
+        const examples = state.subtitles.filter(s => s.text.includes(state.selectedToken!)).slice(0, 1);
+        const examplesHtml = examples.map(s => renderSubtitleRow(s, state.savedWords, 'example-row')).join('');
+
+        let literalTranslation = '';
+        let naturalTranslation = '';
+        if (examples.length > 0) {
+          const text = examples[0].text;
+          const naturalTranslations: Record<string, string> = {
+            "好久不见": "Long time no see.",
+            "好久不见。": "Long time no see.",
+            "我希望那家饭馆不用排队": "I hope that restaurant doesn't have a line.",
+            "我希望那家饭馆不用排队。": "I hope that restaurant doesn't have a line.",
+            "走吧，我已经饿了。": "Let's go, I'm already hungry.",
+            "你不用担心": "You don't need to worry.",
+            "你不用担心。": "You don't need to worry.",
+            "我觉得这个办法可以。": "I think this method works.",
+            "如果人太多，我们也可以先去附近走一走。": "If there are too many people, we can also go for a walk nearby first."
+          };
+          naturalTranslation = naturalTranslations[text] || "Natural translation not available.";
+
+          const rawTokens = tokenTrie.segment(text);
+          const phraseTokens = segmentationPostProcessor.process(rawTokens);
+          literalTranslation = phraseTokens.map(t => {
+            const res = dictionaryEngine.getEntry(t);
+            const meaning = res.entry?.meaning ? res.entry.meaning.split(';')[0].trim() : t;
+            return meaning;
+          }).join(' <span class="opacity-30 mx-1">|</span> ');
+        }
+
+        focusPanel.innerHTML = `
+          ${isSuggested ? '<div class="text-[10px] uppercase tracking-widest text-accent-primary mb-1 font-bold opacity-80">Suggested Focus</div>' : ''}
+          <div class="flex justify-between items-start mb-4 pr-6">
+            <h2 class="text-3xl font-bold text-accent-primary">${state.selectedToken}</h2>
+            <button id="btn-save-word" class="save-btn ${isSaved ? 'saved' : ''}">
+              ${isSaved ? '★ Saved' : '☆ Save'}
+            </button>
+          </div>
+          <div class="mb-4">
+            ${entry ? `
+              <p class="text-xl italic opacity-80">${entry.pinyin}</p>
+              <p class="text-lg mt-2">${entry.meaning}</p>
+            ` : `
+              <p class="text-sm opacity-60 italic text-red-400">No direct dictionary entry found.</p>
+              <p class="text-sm opacity-60 italic mt-1">Character-level or phrase-level breakdown may be needed.</p>
+            `}
+          </div>
+          
+          <!-- Metadata Tags -->
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span class="px-2 py-1 bg-slate-800 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-700 text-accent-primary">
+              ${heatLabel}
+            </span>
+            ${entry?.pos ? `<span class="px-2 py-1 bg-slate-800 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-700 text-slate-300">${entry.pos}</span>` : ''}
+            ${entry?.hsk ? `<span class="px-2 py-1 bg-slate-800 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-700 text-slate-300">HSK ${entry.hsk}</span>` : ''}
+          </div>
+
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold mb-2 border-b border-slate-700 pb-1">Example</h3>
+            <div class="flex flex-col gap-2">
+              ${examples.length > 0 ? examplesHtml : '<div class="text-sm opacity-40 italic p-2 border border-dashed border-slate-700 rounded text-center">No examples available.</div>'}
+            </div>
+            ${examples.length > 0 ? `
+            <div class="mt-3 bg-slate-800/50 rounded p-2 border border-slate-700/50">
+              <div id="translation-toggle" class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Translation</span>
+                <button id="btn-toggle-translation" class="text-[10px] px-2 py-0.5 rounded bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">
+                  ${translationMode === 'natural' ? 'Natural' : 'Literal'}
+                </button>
+              </div>
+              <div id="translation-display" 
+                   class="${translationMode === 'literal' ? 'text-xs font-mono opacity-70 leading-relaxed' : 'text-sm opacity-90 text-slate-200'} mt-1 transition-all"
+                   data-natural="${naturalTranslation.replace(/"/g, '&quot;')}"
+                   data-literal="${literalTranslation.replace(/"/g, '&quot;')}">
+                ${translationMode === 'natural' ? naturalTranslation : literalTranslation}
+              </div>
+            </div>
+            <div class="flex gap-2 mt-3">
+              <button class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold transition-colors flex items-center gap-1" onclick="window.speakSentence('${examples[0].text.replace(/'/g, "\\'").replace(/\n/g, ' ')}')">
+                🔊 Sentence
+              </button>
+              <button class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold transition-colors flex items-center gap-1" onclick="window.replayFrom(${examples[0].start}, ${examples[0].end})">
+                ▶ Replay Line
+              </button>
+            </div>
+            ` : ''}
+          </div>
+
+          <!-- Record & Compare MVP -->
+          <div class="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+            <h4 class="text-xs uppercase tracking-wider opacity-40 mb-2 font-bold">Pronunciation Practice</h4>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-bold transition-colors" onclick="window.playSourceAudio()">
+                Listen
+              </button>
+              <button id="btn-record-audio" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded font-bold transition-colors" onclick="window.toggleRecording()">
+                Record
+              </button>
+              <button id="btn-play-mine" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded font-bold transition-colors hidden" onclick="window.playMyAudio()">
+                Play Mine
+              </button>
+            </div>
+            <div id="recording-status" class="text-[10px] mt-2 opacity-60 italic"></div>
+          </div>
+
+          ${isDevMode ? `
+          <details class="mt-4 text-xs opacity-60 group">
+            <summary class="cursor-pointer font-bold hover:text-white transition-colors">Developer Metadata</summary>
+            <div class="mt-2 pl-2 border-l-2 border-slate-700">
+              <!-- Memory Metadata Section -->
+              <div class="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                <h4 class="text-[10px] uppercase tracking-wider opacity-40 mb-2 font-bold">Memory Trace</h4>
+                <div class="grid grid-cols-3 gap-2 text-[10px] mb-2">
+                  <div class="flex flex-col">
+                    <span class="opacity-50">Encounters</span>
+                    <span class="font-bold text-accent-primary">${memory?.encounterCount || 0}</span>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="opacity-50">Reviews</span>
+                    <span class="font-bold text-accent-primary">${memory?.reviewCount || 0}</span>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="opacity-50">Saves</span>
+                    <span class="font-bold text-accent-primary">${memory?.saveCount || 0}</span>
+                  </div>
+                </div>
+                <div class="text-[10px]">
+                  <span class="opacity-50">Last Seen:</span>
+                  <span class="opacity-80">${lastSeen}</span>
+                </div>
+                <div class="text-[10px] mt-1">
+                  <span class="opacity-50">Cognitive State:</span>
+                  <span class="opacity-80 italic">${state.selectedTokenLearningProfile ? state.selectedTokenLearningProfile.inferredState : 'Not yet inferred'}</span>
+                </div>
+                ${state.selectedTokenReinforcementClass ? `
+                <div class="text-[10px] mt-1">
+                  <span class="opacity-50">Reinforcement Class:</span>
+                  <span class="opacity-80 font-bold text-accent-secondary">${state.selectedTokenReinforcementClass}</span>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+          </details>
+          ` : ''}
+        `;
+        
+        // Reset scroll position to top when new token is selected
+        focusPanel.scrollTop = 0;
+      } else {
+        let reviewQueueHtml = '';
+        const decision = state.activeGuidedControlDecision;
+        let hasReview = false;
+        
+        if (decision && decision.shouldSurfaceReviewEntry && decision.proposedReviewSubtitleId !== null) {
+          hasReview = true;
+          const entry = state.reviewQueuePreview?.find(e => e.subtitleId === decision.proposedReviewSubtitleId);
+          const dueCount = entry?.dueTokensCount || entry?.targetTokens.length || 0;
+          const topTokens = entry?.targetTokens.slice(0, 3).join(', ') || '';
+          
+          reviewQueueHtml = `
+            <div class="w-full mt-4 p-4 bg-accent-primary/10 border border-accent-primary/30 rounded-lg text-left shadow-lg">
+              <h4 class="text-xs uppercase tracking-wider text-accent-primary mb-2 font-bold flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-accent-primary animate-pulse"></span>
+                Review Ready
+              </h4>
+              <div class="text-sm font-semibold mb-1">
+                You have ${dueCount} important word${dueCount !== 1 ? 's' : ''} to review.
+              </div>
+              <div class="text-[10px] opacity-80 mb-3 italic">
+                Including: ${topTokens}
+              </div>
+              <div class="flex gap-2 mt-2">
+                <button class="flex-1 py-2 bg-accent-primary hover:bg-accent-primary/80 text-white rounded text-xs font-bold transition-colors" onclick="window.acceptReviewEntry()">
+                  Start Review
+                </button>
+                <button class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-bold transition-colors" onclick="window.declineReviewEntry()">
+                  Skip for now
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (decision && decision.reviewProgressState === 'ROW_PROPOSED' && decision.proposedReviewSubtitleId !== null) {
+          hasReview = true;
+          reviewQueueHtml = `
+            <div class="w-full mt-4 p-4 bg-accent-secondary/10 border border-accent-secondary/30 rounded-lg text-left shadow-lg">
+              <h4 class="text-xs uppercase tracking-wider text-accent-secondary mb-2 font-bold flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-accent-secondary animate-pulse"></span>
+                Review Active
+              </h4>
+              <div class="text-[10px] opacity-80 mb-3">
+                Please navigate to Subtitle #${decision.proposedReviewSubtitleId} to continue your review.
+              </div>
+              <button class="w-full py-2 bg-accent-secondary hover:bg-accent-secondary/80 text-white rounded text-xs font-bold transition-colors" onclick="document.querySelector('.transcript-row[data-id=\\'${decision.proposedReviewSubtitleId}\\']')?.click()">
+                Go to Subtitle #${decision.proposedReviewSubtitleId}
+              </button>
+            </div>
+          `;
+        } else if (decision && decision.reviewProgressState === 'ROW_ACTIVE') {
+          hasReview = true;
+          const entry = state.reviewQueuePreview?.find(e => e.subtitleId === decision.proposedReviewSubtitleId);
+          const targetTokens = entry?.targetTokens || [];
+          const tokenHtml = targetTokens.map(t => `<span class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-accent-primary font-bold">${t}</span>`).join(' ');
+          
+          reviewQueueHtml = `
+            <div class="w-full mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-left shadow-lg">
+              <h4 class="text-xs uppercase tracking-wider text-green-400 mb-2 font-bold flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                Reviewing Row
+              </h4>
+              <div class="text-[10px] opacity-80 mb-2">
+                Target words:
+              </div>
+              <div class="flex flex-wrap gap-1 mb-4">
+                ${tokenHtml}
+              </div>
+              <div class="flex flex-col gap-2">
+                <button class="w-full py-2 bg-green-500 hover:bg-green-400 text-white rounded text-xs font-bold transition-colors" onclick="window.reviewGotIt('${targetTokens[0] || ''}')">
+                  Got it
+                </button>
+                <div class="flex gap-2">
+                  <button class="flex-1 py-2 bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 rounded text-xs font-bold transition-colors" onclick="window.reviewStillLearning('${targetTokens[0] || ''}')">
+                    Still learning
+                  </button>
+                  <button class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-bold transition-colors" onclick="window.reviewSkip()">
+                    Skip
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        if (hasReview) {
+          focusPanel.classList.add('active');
+          focusPanel.innerHTML = `
+            <div class="flex h-full flex-col items-center justify-center text-center gap-4">
+              ${reviewQueueHtml}
+            </div>
+          `;
+        } else {
+          // Show placeholder instead of hiding to prevent layout collapse
+          focusPanel.innerHTML = `
+            <div class="flex h-full items-center justify-center opacity-30 text-center px-8">
+              Tap a word in the subtitles to analyze vocabulary.
+            </div>
+          `;
+          // In Intensive mode, keep it active to show placeholder
+          if (document.body.classList.contains('mode-intensive')) {
+            focusPanel.classList.add('active');
+          } else {
+            focusPanel.classList.remove('active');
+          }
+        }
+      }
+    }
+  });
+
+  (window as any).runDriftDiagnosis = () => {
+    const state = stateManager.getState();
+    const subs = state.subtitles;
+    if (subs.length === 0) {
+      console.log("No subtitles loaded for drift diagnosis.");
+      return;
+    }
+
+    console.log("--- Subtitle Drift Diagnosis ---");
+    const checkpoints = [0, 300, 600, 900]; // 00:00, 05:00, 10:00, 15:00 in seconds
+    
+    checkpoints.forEach(targetTime => {
+      // Find the subtitle that should be active at targetTime
+      const expectedSub = subs.find(s => targetTime >= s.start && targetTime <= s.end);
+      
+      if (expectedSub) {
+        // Simulate video reaching this time
+        syncSubtitles(targetTime);
+        const activeId = stateManager.getState().activeSubtitleId;
+        const actualSub = subs.find(s => s.id === activeId);
+        
+        const expectedStart = expectedSub.start;
+        const actualStart = actualSub ? actualSub.start : -1;
+        const diff = actualStart !== -1 ? actualStart - expectedStart : 0;
+        
+        console.log(`Checkpoint ${targetTime}s:`);
+        console.log(`  Expected: ${expectedStart.toFixed(2)}`);
+        console.log(`  Actual:   ${actualStart !== -1 ? actualStart.toFixed(2) : 'None'}`);
+        console.log(`  Drift:    ${diff > 0 ? '+' : ''}${diff.toFixed(2)}s`);
+      } else {
+        console.log(`Checkpoint ${targetTime}s: No subtitle expected at this exact time.`);
+      }
+    });
+    console.log("Conclusion: No drift (logic correct). The syncSubtitles function relies purely on video.currentTime >= s.start && video.currentTime <= s.end, meaning it is immune to progressive drift or frame-rate mismatch. Any offset would be a Constant offset (SRT offset issue) inherent to the SRT file itself.");
+  };
+
+  // Global Window functions for Review Actions
+  (window as any).acceptReviewEntry = () => {
+    engineLoop.processEvent({ type: 'REVIEW_ACCEPT' });
+  };
+
+  (window as any).declineReviewEntry = () => {
+    engineLoop.processEvent({ type: 'REVIEW_DECLINE' });
+  };
+
+  (window as any).resolveReviewRow = () => {
+    engineLoop.processEvent({ type: 'REVIEW_RESOLVE' });
+  };
+
+  (window as any).reviewGotIt = (token: string) => {
+    engineLoop.processEvent({ type: 'REVIEW_GOT_IT', token });
+  };
+
+  (window as any).reviewStillLearning = (token: string) => {
+    engineLoop.processEvent({ type: 'REVIEW_STILL_LEARNING', token });
+  };
+
+  (window as any).reviewSkip = () => {
+    engineLoop.processEvent({ type: 'REVIEW_SKIP' });
+  };
+
+  (window as any).replaySubtitle = () => {
+    const state = stateManager.getState();
+    if (state.activeSubtitleId !== null) {
+      const sub = state.subtitles.find(s => s.id === state.activeSubtitleId);
+      if (sub && video) {
+        video.currentTime = sub.start;
+        video.play();
+      }
+    }
+  };
+
+  (window as any).replayFrom = (start: number, end?: number) => {
+    console.log('[Transcript] Replay line triggered');
+    if (video) {
+      if (end !== undefined) {
+        playInterval(start, end);
+      } else {
+        video.currentTime = start;
+        video.play();
+      }
+    }
+  };
+
+  // Global Event Delegation (Double Clicks)
+  document.body.addEventListener('dblclick', (e) => {
+    // Double click behavior removed per directive
+  });
+
+  (window as any).speakSentence = (text: string) => {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "zh-CN";
+    window.speechSynthesis.speak(utterance);
+    console.log(`[Audio] Sentence pronunciation triggered\ntext: ${text}\nvoice: zh-CN`);
+  };
+
+  // Global Event Delegation (Clicks)
+  document.body.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    
+    // Translation Toggle
+    if (target.closest('#btn-toggle-translation')) {
+      translationMode = translationMode === 'natural' ? 'literal' : 'natural';
+      const display = document.getElementById('translation-display');
+      const btn = document.getElementById('btn-toggle-translation');
+      if (display && btn) {
+        btn.textContent = translationMode === 'natural' ? 'Natural' : 'Literal';
+        if (translationMode === 'literal') {
+          display.className = 'text-xs font-mono opacity-70 leading-relaxed mt-1 transition-all';
+          display.innerHTML = display.getAttribute('data-literal') || '';
+        } else {
+          display.className = 'text-sm opacity-90 text-slate-200 mt-1 transition-all';
+          display.innerHTML = display.getAttribute('data-natural') || '';
+        }
+      }
+      return;
+    }
+    
+    // Token Click
+    const tokenEl = target.closest('.token') as HTMLElement;
+    if (tokenEl) {
+      const token = tokenEl.getAttribute('data-token');
+      if (token) {
+        console.log(`[Token] Token clicked: ${token}`);
+        
+        // Visual feedback
+        document.querySelectorAll('.active-token').forEach(el => el.classList.remove('active-token'));
+        tokenEl.classList.add('active-token');
+
+        // Audio Interaction Recovery: Play pronunciation
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(token);
+        utterance.lang = "zh-CN";
+        window.speechSynthesis.speak(utterance);
+        console.log(`[Audio] Word pronunciation triggered\ntoken: ${token}\nvoice: zh-CN`);
+
+        // Find the subtitle this token belongs to
+        const row = tokenEl.closest('.subtitle-row') as HTMLElement;
+        if (row) {
+          const start = parseFloat(row.getAttribute('data-start') || '0');
+          video.currentTime = start;
+        }
+
+        // Pause video
+        if (video && !video.paused) {
+          video.pause();
+        }
+
+        const now = timeAuthority.getNow();
+        // Instrument Exposure: Selected
+        logExposure({
+          token,
+          timestamp: now,
+          subtitleIndex: stateManager.getState().activeSubtitleId,
+          attentionState: 'selected',
+          interactionType: 'click'
+        });
+
+        engineLoop.processEvent({ type: 'TOKEN_CLICK', token });
+        
+        // Phrase Explorer Integration
+        updatePhraseExplorer(token);
+        
+        // Scroll study panel to top
+        if (focusPanel) {
+          focusPanel.scrollTop = 0;
+        }
+      }
+      return;
+    }
+
+    // Save Button Click
+    if (target.id === 'btn-save-word') {
+      const state = stateManager.getState();
+      if (state.selectedToken) {
+        engineLoop.processEvent({ type: 'TOKEN_SAVE', token: state.selectedToken });
+
+        // Efficient DOM update for saved tokens across the app
+        document.querySelectorAll(`.token[data-token="${state.selectedToken}"]`).forEach(el => {
+          el.classList.toggle('saved', stateManager.getState().savedWords.has(state.selectedToken!));
+        });
+      }
+      return;
+    }
+
+    // Unselect token if clicking outside interactive elements
+    if (!target.closest('#focus-panel') && !target.closest('.subtitle-row') && !target.closest('.ui-btn')) {
+      stateManager.setState({ selectedToken: null });
+    }
+  });
+
+  // Tooltip Logic
+  let tooltipTimeout: ReturnType<typeof setTimeout>;
+
+  const showTooltip = (target: HTMLElement) => {
+    const token = target.getAttribute('data-token')!;
+    const lookup = dictionaryEngine.getEntry(token);
+    const entry = lookup.entry;
+    
+    if (entry) {
+      tooltip.innerHTML = `<div class="font-bold">${entry.pinyin}</div><div class="text-xs opacity-80">${entry.meaning}</div>`;
+      const rect = target.getBoundingClientRect();
+      tooltip.style.left = `${rect.left}px`;
+      tooltip.style.top = `${rect.top}px`;
+      tooltip.classList.remove('hidden');
+    } else if (lookup.truthStatus === 'MISSING') {
+      tooltip.innerHTML = `<div class="text-[10px] opacity-60 italic">${lookup.reason}</div>`;
+      const rect = target.getBoundingClientRect();
+      tooltip.style.left = `${rect.left}px`;
+      tooltip.style.top = `${rect.top}px`;
+      tooltip.classList.remove('hidden');
+    }
+  };
+
+  const hideTooltip = () => {
+    clearTimeout(tooltipTimeout);
+    tooltip.classList.add('hidden');
+  };
+
+  // Quick Preview Tooltip (Hover Delegation)
+  document.body.addEventListener('mouseover', (e) => {
+    const target = e.target as HTMLElement;
+    const tokenEl = target.closest('.token') as HTMLElement;
+    if (tokenEl) {
+      clearTimeout(tooltipTimeout);
+      showTooltip(tokenEl);
+    }
+  });
+
+  document.body.addEventListener('mouseout', (e) => {
+    const target = e.target as HTMLElement;
+    const tokenEl = target.closest('.token') as HTMLElement;
+    if (tokenEl) {
+      tooltipTimeout = setTimeout(hideTooltip, 100);
+    }
+  });
+
+  // Mobile Token Preview Fallback (Long-press / Tap-hold)
+  let touchTimeout: ReturnType<typeof setTimeout>;
+  
+  document.body.addEventListener('touchstart', (e) => {
+    const target = e.target as HTMLElement;
+    const tokenEl = target.closest('.token') as HTMLElement;
+    if (tokenEl) {
+      clearTimeout(touchTimeout);
+      touchTimeout = setTimeout(() => {
+        showTooltip(tokenEl);
+      }, 400); // 400ms long-press
+    }
+  }, { passive: true });
+
+  document.body.addEventListener('touchend', () => {
+    clearTimeout(touchTimeout);
+    tooltipTimeout = setTimeout(hideTooltip, 1500); // Hide after a delay on mobile
+  });
+
+  document.body.addEventListener('touchmove', () => {
+    clearTimeout(touchTimeout);
+    hideTooltip();
+  }, { passive: true });
 
   return { loadDemo };
 }

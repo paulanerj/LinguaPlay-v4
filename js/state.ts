@@ -41,8 +41,6 @@ export interface Subtitle {
   tokens?: string[];
 }
 
-export type UIVersion = 'v1' | 'v2';
-
 export interface AppState {
   videoLoaded: boolean;
   currentTime: number;
@@ -82,9 +80,6 @@ export interface AppState {
   controlHistory?: ControlHistorySnapshot;
   lastAttentionTarget?: string | null;
   sessionMetrics?: SessionMetrics;
-
-  // UI Versioning
-  uiVersion: UIVersion;
 }
 
 class StateManager {
@@ -113,8 +108,7 @@ class StateManager {
       tokensReviewed: 0,
       rescueTokensResolved: 0,
       sessionStartTime: 0 // Will be set on first play
-    },
-    uiVersion: 'v2'
+    }
   };
 
   private listeners: Set<(state: AppState) => void> = new Set();
